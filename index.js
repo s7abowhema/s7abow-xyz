@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
-const { exec } = require('child_process');
+const { spawn, exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -15,6 +15,7 @@ const containerDir = path.join(__dirname, 'container');
 if (!fs.existsSync(containerDir)) fs.mkdirSync(containerDir);
 
 let activeProcess = null;
+let botStatus = 'OFFLINE'; // OFFLINE, STARTING, ONLINE
 
 // إعداد رفع الملفات
 const storage = multer.diskStorage({
@@ -27,7 +28,6 @@ const upload = multer({ storage: storage });
 app.get('/api/files', (req, res) => {
     try {
         if (!fs.existsSync(containerDir)) return res.json({ status: 'success', files: [] });
-        
         const files = fs.readdirSync(containerDir).map(file => {
             const filePath = path.join(containerDir, file);
             const stats = fs.statSync(filePath);
@@ -46,35 +46,26 @@ app.get('/api/files', (req, res) => {
     }
 });
 
-// استقبال ورفع الملفات
 app.post('/api/files/upload', upload.single('file'), (req, res) => {
     res.json({ status: 'success' });
 });
 
-// معالج الأوامر والعمليات الصارم (فك الضغط والحذف)
 app.post('/api/files/action', (req, res) => {
     const { action, fileName } = req.body;
     const filePath = path.join(containerDir, fileName);
 
-    if (!fs.existsSync(filePath)) {
-        return res.status(400).json({ status: 'error', message: 'الملف غير موجود على السيرفر' });
-    }
+    if (!fs.existsSync(filePath)) return res.status(400).json({ status: 'error', message: 'الملف غير موجود' });
 
     if (action === 'unarchive') {
         try {
             const zip = new AdmZip(filePath);
-            // فك الضغط مباشرة في المجلد الرئيسي للحاوية وتجاوز أي فولدر داخلي مكرر
             zip.extractAllTo(containerDir, true);
-            
-            // حذف ملف الـ zip تلقائياً بعد فك الضغط لتوفير المساحة ومنع التكرار
             fs.unlinkSync(filePath);
-            
-            return res.json({ status: 'success', message: 'تم فك الضغط بنجاح وتنظيف الحاوية.' });
+            return res.json({ status: 'success', message: 'تم فك الضغط بنجاح.' });
         } catch (e) {
-            return res.status(500).json({ status: 'error', message: 'حزمة الملفات تالفة أو غير مدعومة' });
+            return res.status(500).json({ status: 'error', message: 'الملف تالف' });
         }
     }
-
     if (action === 'delete') {
         try {
             if (fs.statSync(filePath).isDirectory()) {
@@ -82,61 +73,106 @@ app.post('/api/files/action', (req, res) => {
             } else {
                 fs.unlinkSync(filePath);
             }
-            return res.json({ status: 'success', message: 'تم الحذف النهائي.' });
+            return res.json({ status: 'success' });
         } catch (err) {
-            return res.status(500).json({ status: 'error', message: 'فشل حذف الملف.' });
+            return res.status(500).json({ status: 'error' });
         }
     }
 });
 
-// تنفيذ أوامر الكونسول النصية
-app.post('/api/console/command', (req, res) => {
-    const { command } = req.body;
-    if (!command) return res.json({ output: '' });
-
-    exec(command, { cwd: containerDir }, (error, stdout, stderr) => {
-        let output = stdout || stderr || '';
-        if (error && !stderr) {
-            output = `خطأ: ${error.message}`;
-        }
-        res.json({ output: output || 'تم تنفيذ الأمر بنجاح.' });
+// نظام بث مخرجات الكونسول لحظة بلحظة (Server-Sent Events) لتقليد اللوحة الأصلية
+let logClients = [];
+app.get('/api/console/stream', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    logClients.push(res);
+    req.on('close', () => {
+        logClients = logClients.filter(client => client !== res);
     });
 });
 
-// التحكم في البوت
-app.post('/api/bot/control', (req, res) => {
-    const { action } = req.body;
+function broadcastLog(message) {
+    logClients.forEach(client => client.write(`data: ${JSON.stringify({ log: message, status: botStatus })}\n\n`));
+}
+
+// تشغيل البوت بمحاكاة كاملة لـ OptikLink الذكية
+function startBotHardware() {
+    botStatus = 'STARTING';
+    broadcastLog(`\n\x1b[36m««[OptikLink]»»\x1b[0m Checking server disk space usage...\n\x1b[36m««[OptikLink]»»\x1b[0m Ensuring file permissions are set correctly...\n\x1b[36m««[OptikLink]»»\x1b[0m Server marked as starting...`);
+
     const mainBotFile = path.join(containerDir, 'index.js');
-
-    if (action === 'start') {
-        if (activeProcess) return res.json({ status: 'info', output: 'البوت يعمل بالفعل حالياً.' });
-        
-        // فحص ذكي للملف الرئيسي قبل التشغيل
-        if (!fs.existsSync(mainBotFile)) {
-            return res.json({ status: 'error', output: '❌ خطأ: لم يتم العثور على ملف التشغيل الرئيسي index.js في المجلد الرئيسي للحاوية!\nتأكد أن الملف ليس داخل مجلد فرعي بعد فك الضغط.' });
-        }
-
-        activeProcess = exec(`node index.js`, { cwd: containerDir });
-        return res.json({ status: 'success', output: '🟢 Server marked as online...\n[OptikLink]>> جاري فحص ملفات التشغيل وتفعيل البوت حياً...' });
+    if (!fs.existsSync(mainBotFile)) {
+        botStatus = 'OFFLINE';
+        broadcastLog(`\n\x1b[31m❌ [خطأ في تشغيل الحاوية]: ملف التشغيل الرئيسي index.js غير موجود بالخارج!\x1b[0m`);
+        return;
     }
 
+    // محاكاة تنصيب الـ Packages التلقائية مثل لوحة OptikLink الفصيلية
+    broadcastLog(`\n\x1b[33m[OptikLink Hardware]>> Running auto npm install check...\x1b[0m`);
+    
+    // تشغيل عملية node عبر spawn لتوفير البث المباشر للسطور (Stream Logs)
+    activeProcess = spawn('node', ['index.js'], { cwd: containerDir });
+    botStatus = 'ONLINE';
+
+    activeProcess.stdout.on('data', (data) => {
+        broadcastLog(data.toString());
+    });
+
+    activeProcess.stderr.on('data', (data) => {
+        broadcastLog(data.toString());
+    });
+
+    activeProcess.on('close', (code) => {
+        botStatus = 'OFFLINE';
+        broadcastLog(`\n\x1b[31m««[OptikLink]»» Server marked as offline...\x1b[0m`);
+        activeProcess = null;
+    });
+}
+
+// أزرار التحكم اللحظية
+app.post('/api/bot/control', (req, res) => {
+    const { action } = req.body;
+
+    if (action === 'start') {
+        if (activeProcess) return res.json({ status: 'info' });
+        startBotHardware();
+        return res.json({ status: 'success' });
+    }
     if (action === 'stop') {
         if (activeProcess) {
             activeProcess.kill();
             activeProcess = null;
-            return res.json({ status: 'success', output: '🔴 Server marked as offline...' });
+            botStatus = 'OFFLINE';
+            broadcastLog(`\n\x1b[31m««[OptikLink]»» Server marked as offline...\x1b[0m`);
         }
-        return res.json({ status: 'info', output: 'الحاوية متوقفة بالفعل.' });
+        return res.json({ status: 'success' });
     }
-
     if (action === 'restart') {
-        if (activeProcess) activeProcess.kill();
-        if (!fs.existsSync(mainBotFile)) {
-            return res.json({ status: 'error', output: '❌ خطأ: ملف index.js مفقود، لا يمكن إعادة التشغيل.' });
+        if (activeProcess) {
+            activeProcess.kill();
         }
-        activeProcess = exec(`node index.js`, { cwd: containerDir });
-        return res.json({ status: 'success', output: '🔄 جاري عمل إعادة تشغيل شاملة للملفات...\n🟢 Server marked as online.' });
+        startBotHardware();
+        return res.json({ status: 'success' });
     }
 });
 
-app.listen(PORT, () => console.log(`المنصة تعمل بكفاءة على المنفذ ${PORT}`));
+// تنفيذ أوامر الكونسول من الـ Input السفلي
+app.post('/api/console/command', (req, res) => {
+    const { command } = req.body;
+    if (!command) return res.json({ output: '' });
+
+    if (activeProcess) {
+        activeProcess.stdin.write(command + '\n');
+        return res.json({ output: '' });
+    } else {
+        exec(command, { cwd: containerDir }, (error, stdout, stderr) => {
+            let output = stdout || stderr || 'تم تنفيذ الأمر بنجاح.';
+            broadcastLog(`\n${output}`);
+        });
+        res.json({ output: '' });
+    }
+});
+
+app.listen(PORT, () => console.log(`المنصة تعمل بمحاكاة OptikLink على منفذ ${PORT}`));
+         
