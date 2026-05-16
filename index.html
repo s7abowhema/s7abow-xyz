@@ -73,9 +73,45 @@
         .dropdown-menu button { display: block; width: 130px; padding: 10px 15px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; font-size: 13px; }
         .dropdown-menu button:hover { background: var(--blue); }
         .hidden { display: none !important; }
+
+        /* ================= شاشة الرفع الدائرية (Optiklink Loader) ================= */
+        .upload-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(11, 13, 25, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        .upload-text {
+            font-size: 16px;
+            color: #fff;
+            font-family: monospace;
+            direction: ltr;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
+
+    <div id="uploadOverlay" class="upload-overlay hidden">
+        <div class="spinner"></div>
+        <div id="uploadText" class="upload-text">Uploaded 0 kB of 0 kB (0%)</div>
+    </div>
 
     <div class="sidebar">
         <div class="sidebar-icon active" id="s-console" onclick="switchPage('console')">💻</div>
@@ -128,7 +164,6 @@
     </div>
 
 <script>
-    // إغلاق أي قائمة خيارات مفتوحة عند الضغط في أي مكان فارغ بالصفحة تسريعاً للتصفح
     document.addEventListener('click', function(e) {
         if (!e.target.classList.contains('context-menu-btn')) {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
@@ -182,11 +217,10 @@
 
     async function loadFiles() {
         const tbody = document.getElementById('files-list');
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>جاري تحديث الحاوية...</td></tr>";
+        tbody.innerHTML = "";
         
         const res = await fetch('/api/files');
         const data = await res.json();
-        tbody.innerHTML = "";
 
         if(data.files.length === 0) {
             tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>المجلد فارغ، ارفع ملف البوت المضغوط .zip وابدأ بالعمل.</td></tr>";
@@ -222,110 +256,51 @@
         menu.style.display = current === 'block' ? 'none' : 'block';
     }
 
-    async function uploadFile() {
+    // الدالة المسؤولة عن الرفع مع حساب النسبة المئوية الدقيقة والعداد
+    function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if(fileInput.files.length === 0) return;
         
+        const file = fileInput.files[0];
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('file', file);
 
-        const tbody = document.getElementById('files-list');
-        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--blue);'>جاري رفع الحزمة للسيرفر بنجاح...</td></tr>";
+        const overlay = document.getElementById('uploadOverlay');
+        const uploadText = document.getElementById('uploadText');
 
-        await fetch('/api/files/upload', { method: 'POST', body: formData });
-        fileInput.value = ""; // تنظيف المدخل
-        loadFiles();
-    }
+        // إظهار نافذة التحميل الدائرية
+        overlay.classList.remove('hidden');
 
-    async function fileAction(action, fileName) {
-        const res = await fetch('/api/files/action', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ action, fileName })
-        });
-        const data = await res.json();
-        
-        // إعادة تحديث قائمة الملفات فوراً بعد الحذف أو الفك التلقائي لضمان السرعة والشفافية
-        loadFiles();
-    }
-</script>
-</body>
-</html>
-            document.getElementById('t-console').classList.remove('active');
-            document.getElementById('t-files').classList.add('active');
-            loadFiles();
-        }
-    }
+        const xhr = new XMLHttpRequest();
 
-    // إدارة الكونسول والتحكم بالبوت
-    async function sendControl(action) {
-        const out = document.getElementById('console-output');
-        const dot = document.getElementById('status-dot');
-        const txt = document.getElementById('status-txt');
-
-        const res = await fetch('/api/bot/control', {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ action })
-        });
-        const data = await res.json();
-        
-        out.innerText += "\n" + data.output;
-        out.scrollTop = out.scrollHeight;
-
-        if(action === 'start' || action === 'restart') {
-            if(data.status !== 'error') {
-                dot.className = "status-dot status-online";
-                txt.textContent = "ONLINE";
+        // تحديث أرقام النسبة المئوية وحجم البيانات المرفوعة حياً
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const uploadedKb = (e.loaded / 1024).toFixed(1);
+                const totalKb = (e.total / 1024).toFixed(1);
+                const percent = Math.round((e.loaded / e.total) * 100);
+                
+                uploadText.textContent = `Uploaded ${uploadedKb} kB of ${totalKb} kB (${percent}%)`;
             }
-        } else {
-            dot.className = "status-dot status-offline";
-            txt.textContent = "OFFLINE";
-        }
-    }
-
-    // جلب وعرض الملفات المرفوعة
-    async function loadFiles() {
-        const tbody = document.getElementById('files-list');
-        tbody.innerHTML = "";
-        const res = await fetch('/api/files');
-        const data = await res.json();
-
-        data.files.forEach((file, index) => {
-            tbody.innerHTML += `
-                <tr class="file-row">
-                    <td style="color: #58a6ff;">📄 ${file.name}</td>
-                    <td>${file.size}</td>
-                    <td style="color: var(--text-muted);">${file.time}</td>
-                    <td class="context-menu-btn" style="text-align:left;" onclick="toggleMenu(${index})">...
-                        <div class="dropdown-menu" id="menu-${index}">
-                            <button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>
-                            <button onclick="fileAction('delete', '${file.name}')" style="color:var(--red);">Delete</button>
-                        </div>
-                    </td>
-                </tr>
-            `;
         });
+
+        // عند اكتمال الرفع بنجاح
+        xhr.addEventListener('load', () => {
+            overlay.classList.add('hidden'); // إخفاء العداد
+            fileInput.value = ""; 
+            loadFiles(); // تحديث الجدول فوراً
+        });
+
+        // في حال حدوث خطأ في الشبكة
+        xhr.addEventListener('error', () => {
+            alert('حدث خطأ أثناء الرفع، تأكد من اتصال السيرفر.');
+            overlay.classList.add('hidden');
+        });
+
+        xhr.open('POST', '/api/files/upload');
+        xhr.send(formData);
     }
 
-    function toggleMenu(index) {
-        const menu = document.getElementById(`menu-${index}`);
-        const current = menu.style.display;
-        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
-        menu.style.display = current === 'block' ? 'none' : 'block';
-    }
-
-    // رفع ملفات جديدة حية للسيرفر
-    async function uploadFile() {
-        const fileInput = document.getElementById('fileInput');
-        const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
-
-        await fetch('/api/files/upload', { method: 'POST', body: formData });
-        loadFiles();
-    }
-
-    // تشغيل الإجراءات (فك الضغط أو مسح)
     async function fileAction(action, fileName) {
         await fetch('/api/files/action', {
             method: 'POST',
