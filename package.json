@@ -1,7 +1,7 @@
 {
-  "name": "optiklink-clone-hosting",
+  "name": "optiklink-pterodactyl-clone",
   "version": "1.0.0",
-  "description": "منصة استضافة ورفع ملفات البوتات وتشغيلها على Railway",
+  "description": "لوحة تحكم كاملة تشبه Optiklink مع كونسول ومستعرض ملفات",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
