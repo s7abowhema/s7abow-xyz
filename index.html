@@ -91,7 +91,7 @@
 
     <div id="uploadOverlay" class="upload-overlay hidden">
         <div class="spinner"></div>
-        <div id="uploadText" class="upload-text">Uploaded 0 kB of 0 kB (0%)</div>
+        <div id="uploadText" class="upload-text">Uploading...</div>
     </div>
 
     <div class="main-content">
@@ -116,7 +116,7 @@
                 <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
                 <div class="console-input-area">
                     <span class="console-prefix">optiklink@container:~$</span>
-                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter (مثال: npm install أو ls)..." onkeydown="handleConsoleCommand(event)">
+                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter..." onkeydown="handleConsoleCommand(event)">
                 </div>
             </div>
         </div>
@@ -146,7 +146,6 @@
     </div>
 
 <script>
-    // إغلاق قوائم الخيارات عند الضغط بالخارج
     document.addEventListener('click', function(e) {
         if (!e.target.classList.contains('context-menu-btn')) {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
@@ -164,7 +163,7 @@
             document.getElementById('page-files').classList.remove('hidden');
             document.getElementById('t-console').classList.remove('active');
             document.getElementById('t-files').classList.add('active');
-            loadFiles();
+            loadFiles(); // تحديث فوري عند فتح التبويب
         }
     }
 
@@ -183,18 +182,15 @@
         out.innerText += "\n" + data.output;
         out.scrollTop = out.scrollHeight;
 
-        if(action === 'start' || action === 'restart') {
-            if(data.status !== 'error') {
-                dot.className = "status-dot status-online";
-                txt.textContent = "ONLINE";
-            }
-        } else {
+        if((action === 'start' || action === 'restart') && data.status === 'success') {
+            dot.className = "status-dot status-online";
+            txt.textContent = "ONLINE";
+        } else if (action === 'stop') {
             dot.className = "status-dot status-offline";
             txt.textContent = "OFFLINE";
         }
     }
 
-    // إرسال أوامر الكونسول النصية
     async function handleConsoleCommand(event) {
         if (event.key === 'Enter') {
             const input = document.getElementById('cmdInput');
@@ -224,7 +220,7 @@
         const data = await res.json();
         tbody.innerHTML = "";
 
-        if(data.files.length === 0) {
+        if(!data.files || data.files.length === 0) {
             tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>الحاوية فارغة حالياً. يرجى رفع ملفات البوت.</td></tr>";
             return;
         }
@@ -232,8 +228,6 @@
         data.files.forEach((file, index) => {
             const icon = file.isFolder ? "📁" : "📄";
             const fileColor = file.isFolder ? "#e0af68" : "#58a6ff";
-            
-            // التحقق من الملف المضغوط لإظهار زر Unarchive بشكل صحيح
             const isZip = file.name.toLowerCase().includes('.zip');
             const unarchiveBtn = isZip ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
 
@@ -270,23 +264,13 @@
         formData.append('file', file);
 
         const overlay = document.getElementById('uploadOverlay');
-        const uploadText = document.getElementById('uploadText');
         overlay.classList.remove('hidden');
 
         const xhr = new XMLHttpRequest();
-        xhr.upload.addEventListener('progress', (e) => {
-            if (e.lengthComputable) {
-                const uploadedKb = (e.loaded / 1024).toFixed(1);
-                const totalKb = (e.total / 1024).toFixed(1);
-                const percent = Math.round((e.loaded / e.total) * 100);
-                uploadText.textContent = `Uploaded ${uploadedKb} kB of ${totalKb} kB (${percent}%)`;
-            }
-        });
-
         xhr.addEventListener('load', () => {
             overlay.classList.add('hidden');
             fileInput.value = ""; 
-            setTimeout(loadFiles, 400); // مهلة قصيرة لضمان تحديث التخزين على Railway
+            loadFiles(); // تحديث فوري تلقائي بعد انتهاء الرفع
         });
 
         xhr.open('POST', '/api/files/upload');
@@ -296,17 +280,15 @@
     async function fileAction(action, fileName) {
         const cleanName = fileName.endsWith('/') ? fileName.slice(0, -1) : fileName;
 
-        await fetch('/api/files/action', {
+        const res = await fetch('/api/files/action', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action, fileName: cleanName })
         });
         
-        // تحديث فوري وحقيقي لشجرة الملفات
-        setTimeout(loadFiles, 300);
+        // تحديث القائمة فوراً وبدون تأخير بعد المسح أو فك الضغط
+        loadFiles();
     }
 </script>
-</body>
-</html>
 </body>
 </html>
