@@ -3,163 +3,224 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>S7ADOW HOST | منصة رفع وتشغيل البوتات</title>
+    <title>OptikLink | Control Panel</title>
     <style>
         :root {
-            --bg-dark: #090c10;
-            --panel-dark: #161b22;
-            --border-color: #30363d;
-            --accent-blue: #58a6ff;
-            --neon-green: #2ea44f;
-            --neon-red: #da3637;
-            --text-color: #c9d1d9;
+            --bg-main: #0b0d19;
+            --bg-card: #111424;
+            --border: #1d223d;
+            --text-muted: #626c93;
+            --red: #da3637;
+            --green: #2ea44f;
+            --blue: #0076ff;
         }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-color);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-main);
+            color: #fff;
             margin: 0;
-            padding: 20px;
+            padding: 0;
         }
-        .container {
-            max-width: 700px;
-            margin: 40px auto;
+        .sidebar {
+            width: 70px;
+            background: var(--bg-card);
+            position: fixed;
+            height: 100vh;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 25px;
         }
-        .card {
-            background-color: var(--panel-dark);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-        }
-        h2 { color: #fff; margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
-        h2 span { color: var(--accent-blue); }
-        
-        /* إعدادات فورم الرفع */
-        .upload-zone {
-            border: 2px dashed var(--accent-blue);
-            padding: 20px;
+        .sidebar-icon {
+            color: var(--text-muted);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 10px;
             border-radius: 8px;
-            text-align: center;
-            background: rgba(88, 166, 255, 0.03);
-            margin-bottom: 15px;
-            cursor: pointer;
         }
-        input[type="file"] { display: none; }
+        .sidebar-icon.active { color: var(--blue); background: rgba(0,118,255,0.1); }
+        .main-content { margin-right: 70px; padding: 30px; }
+        .nav-tabs { display: flex; gap: 20px; border-bottom: 2px solid var(--border); margin-bottom: 20px; padding-bottom: 10px; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; font-weight: bold; cursor: pointer; }
+        .tab-btn.active { color: #fff; border-bottom: 2px solid var(--blue); padding-bottom: 10px; margin-bottom: -12px; }
         
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .btn-upload { background-color: var(--accent-blue); color: #000; width: 100%; }
-        .btn-start { background-color: var(--neon-green); color: #fff; flex: 1; }
-        .btn-stop { background-color: var(--neon-red); color: #fff; flex: 1; }
-        .btn-group { display: flex; gap: 15px; margin-top: 15px; }
-
-        .terminal {
-            background-color: #010409;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 15px;
-            font-family: monospace;
-            height: 150px;
-            overflow-y: auto;
-            color: #8b949e;
-            margin-top: 15px;
-        }
+        /* كروت الستيت والكونسول */
+        .info-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
+        .status-dot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin-left: 5px; }
+        .status-offline { background: var(--red); }
+        .status-online { background: var(--green); }
+        
+        .btn-action-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        .btn-ctrl { padding: 8px 20px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; }
+        .btn-start { background: var(--green); }
+        .btn-restart { background: #5c6bc0; }
+        .btn-stop { background: var(--red); }
+        
+        .console-screen { background: #070913; border: 1px solid var(--border); border-radius: 6px; padding: 20px; font-family: monospace; height: 300px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; }
+        
+        /* مدير الملفات */
+        .files-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; }
+        .file-table th, .file-table td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border); }
+        .file-table th { color: var(--text-muted); font-size: 14px; }
+        .file-row:hover { background: rgba(255,255,255,0.02); }
+        .context-menu-btn { cursor: pointer; color: var(--text-muted); font-weight: bold; text-align: left; position: relative; }
+        .dropdown-menu { display: none; position: absolute; left: 0; background: #181d30; border: 1px solid var(--border); border-radius: 4px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .dropdown-menu button { display: block; width: 120px; padding: 10px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; font-size: 13px; }
+        .dropdown-menu button:hover { background: var(--blue); }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #fff; margin: 0;">S7ADOW <span>CLOUD</span></h1>
-        <p style="color: #8b949e;">ارفع ملفات بوتك واجعله يعمل 24 ساعة مجاناً</p>
+    <div class="sidebar">
+        <div class="sidebar-icon active" onclick="switchPage('console')">💻</div>
+        <div class="sidebar-icon" onclick="switchPage('files')">📂</div>
     </div>
 
-    <div class="card">
-        <h2>1. رفع ملفات البوت (Zip)</h2>
-        <form id="uploadForm">
-            <label for="botZip" class="upload-zone" id="dropZone">
-                اضغط هنا لاختيار ملف البوت المضغوط (.zip)
-            </label>
-            <input type="file" id="botZip" name="botZip" accept=".zip" required onchange="fileSelected(this)">
-            <button type="submit" class="btn btn-upload">ابدأ رفع وحفظ الملفات</button>
-        </form>
-    </div>
-
-    <div class="card">
-        <h2>2. لوحة التحكم والتشغيل</h2>
-        <p>ملاحظة: تأكد أن ملفك الرئيسي داخل الـ Zip يسمى <code style="color: var(--accent-blue);">index.js</code></p>
-        
-        <div class="btn-group">
-            <button class="btn btn-start" onclick="controlBot('start')">تشغيل البوت</button>
-            <button class="btn btn-stop" onclick="controlBot('stop') font-weight: bold;">إيقاف البوت</button>
+    <div class="main-content">
+        <div class="nav-tabs">
+            <button class="tab-btn active" id="t-console" onclick="switchPage('console')">الكونسول الرئيسي</button>
+            <button class="tab-btn" id="t-files" onclick="switchPage('files')">إدارة الملفات</button>
         </div>
 
-        <div class="terminal" id="logTerminal">> نظام الاستضافة جاهز ومستقر...</div>
+        <div id="page-console">
+            <div class="info-bar">
+                <span id="status-dot" class="status-dot status-offline"></span> حالة الحاوية: <span id="status-txt" style="color:#fff; margin-left:20px;">OFFLINE</span>
+                💾 الذاكرة المستهلكة: <span style="color:#fff;">0 KB / 1 GB</span>
+            </div>
+            
+            <div class="btn-action-group">
+                <button class="btn-ctrl btn-start" onclick="sendControl('start')">START</button>
+                <button class="btn-ctrl btn-restart" onclick="sendControl('restart')">RESTART</button>
+                <button class="btn-ctrl btn-stop" onclick="sendControl('stop')">STOP</button>
+            </div>
+            
+            <div class="console-screen" id="console-output">
+                [OptikLink]>> Server marked as offline...
+            </div>
+        </div>
+
+        <div id="page-files" class="hidden">
+            <div class="files-top">
+                <span style="color: var(--text-muted);">المسار الحلي: <code style="color:#fff;">/home/container/</code></span>
+                <div>
+                    <input type="file" id="fileInput" style="display:none;" onchange="uploadFile()">
+                    <button class="btn-ctrl btn-start" onclick="document.getElementById('fileInput').click()">UPLOAD</button>
+                </div>
+            </div>
+
+            <table class="file-table">
+                <thead>
+                    <tr>
+                        <th>اسم الملف</th>
+                        <th>الحجم</th>
+                        <th>تاريخ الرفع</th>
+                        <th style="text-align:left;">خيارات</th>
+                    </tr>
+                </thead>
+                <tbody id="files-list">
+                    </tbody>
+            </table>
+        </div>
     </div>
-</div>
 
 <script>
-    const terminal = document.getElementById('logTerminal');
-
-    function fileSelected(input) {
-        const zone = document.getElementById('dropZone');
-        if(input.files.length > 0) {
-            zone.textContent = "الملف المختار: " + input.files[0].name;
-            zone.style.borderColor = "var(--neon-green)";
+    // التبديل بين الكونسول والملفات
+    function switchPage(page) {
+        if(page === 'console') {
+            document.getElementById('page-console').classList.remove('hidden');
+            document.getElementById('page-files').classList.add('hidden');
+            document.getElementById('t-console').classList.add('active');
+            document.getElementById('t-files').classList.remove('active');
+        } else {
+            document.getElementById('page-console').classList.add('hidden');
+            document.getElementById('page-files').classList.remove('hidden');
+            document.getElementById('t-console').classList.remove('active');
+            document.getElementById('t-files').classList.add('active');
+            loadFiles();
         }
     }
 
-    // معالجة رفع الملف بدون تحديث الصفحة
-    document.getElementById('uploadForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        terminal.innerHTML += `<br><span style="color: #fff;">[رفع] جاري إرسال ملف الـ Zip إلى السيرفر...</span>`;
+    // إدارة الكونسول والتحكم بالبوت
+    async function sendControl(action) {
+        const out = document.getElementById('console-output');
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-txt');
 
-        try {
-            const response = await fetch('/api/upload-bot', { method: 'POST', body: formData });
-            const data = await response.json();
-            if(response.ok) {
-                terminal.innerHTML += `<br><span style="color: var(--neon-green);">> ${data.message}</span>`;
-            } else {
-                terminal.innerHTML += `<br><span style="color: var(--neon-red);">> خطأ: ${data.message}</span>`;
-            }
-        } catch (err) {
-            terminal.innerHTML += `<br><span style="color: var(--neon-red);">> فشل الاتصال بالسيرفر أثناء الرفع.</span>`;
-        }
-        terminal.scrollTop = terminal.scrollHeight;
-    });
+        const res = await fetch('/api/bot/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        
+        out.innerText += "\n" + data.output;
+        out.scrollTop = out.scrollHeight;
 
-    // التحكم في تشغيل البوت المرفوع
-    async function controlBot(action) {
-        terminal.innerHTML += `<br><span style="color: #fff;">[تحكم] جاري إرسال أمر (${action}) للبوت...</span>`;
-        try {
-            const response = await fetch('/api/bot-control', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action })
-            });
-            const data = await response.json();
-            if(response.ok) {
-                const color = action === 'start' ? 'var(--neon-green)' : 'var(--neon-red)';
-                terminal.innerHTML += `<br><span style="color: ${color};">> ${data.message}</span>`;
-            } else {
-                terminal.innerHTML += `<br><span style="color: var(--neon-red);">> خطأ: ${data.message}</span>`;
+        if(action === 'start' || action === 'restart') {
+            if(data.status !== 'error') {
+                dot.className = "status-dot status-online";
+                txt.textContent = "ONLINE";
             }
-        } catch (err) {
-            terminal.innerHTML += `<br><span style="color: var(--neon-red);">> تعذر تنفيذ الأمر، تأكد من حالة السيرفر.</span>`;
+        } else {
+            dot.className = "status-dot status-offline";
+            txt.textContent = "OFFLINE";
         }
-        terminal.scrollTop = terminal.scrollHeight;
+    }
+
+    // جلب وعرض الملفات المرفوعة
+    async function loadFiles() {
+        const tbody = document.getElementById('files-list');
+        tbody.innerHTML = "";
+        const res = await fetch('/api/files');
+        const data = await res.json();
+
+        data.files.forEach((file, index) => {
+            tbody.innerHTML += `
+                <tr class="file-row">
+                    <td style="color: #58a6ff;">📄 ${file.name}</td>
+                    <td>${file.size}</td>
+                    <td style="color: var(--text-muted);">${file.time}</td>
+                    <td class="context-menu-btn" style="text-align:left;" onclick="toggleMenu(${index})">...
+                        <div class="dropdown-menu" id="menu-${index}">
+                            <button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>
+                            <button onclick="fileAction('delete', '${file.name}')" style="color:var(--red);">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function toggleMenu(index) {
+        const menu = document.getElementById(`menu-${index}`);
+        const current = menu.style.display;
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        menu.style.display = current === 'block' ? 'none' : 'block';
+    }
+
+    // رفع ملفات جديدة حية للسيرفر
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        await fetch('/api/files/upload', { method: 'POST', body: formData });
+        loadFiles();
+    }
+
+    // تشغيل الإجراءات (فك الضغط أو مسح)
+    async function fileAction(action, fileName) {
+        await fetch('/api/files/action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action, fileName })
+        });
+        loadFiles();
     }
 </script>
-
 </body>
 </html>
