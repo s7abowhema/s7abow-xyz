@@ -15,16 +15,15 @@ const containerDir = path.join(__dirname, 'container');
 if (!fs.existsSync(containerDir)) fs.mkdirSync(containerDir);
 
 let activeProcess = null;
-let botStatus = 'OFFLINE'; // OFFLINE, STARTING, ONLINE
+let botStatus = 'OFFLINE'; // OFFLINE, STARTING, RUNNING
 
-// إعداد رفع الملفات
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, containerDir),
     filename: (req, file, cb) => cb(null, file.originalname)
 });
 const upload = multer({ storage: storage });
 
-// جلب قائمة الملفات
+// جلب الملفات
 app.get('/api/files', (req, res) => {
     try {
         if (!fs.existsSync(containerDir)) return res.json({ status: 'success', files: [] });
@@ -42,28 +41,26 @@ app.get('/api/files', (req, res) => {
         files.sort((a, b) => b.isFolder - a.isFolder);
         res.json({ status: 'success', files });
     } catch (err) {
-        res.status(500).json({ status: 'error', message: 'تعذر قراءة ملفات الحاوية' });
+        res.status(500).json({ status: 'error' });
     }
 });
 
-app.post('/api/files/upload', upload.single('file'), (req, res) => {
-    res.json({ status: 'success' });
-});
+app.post('/api/files/upload', upload.single('file'), (req, res) => res.json({ status: 'success' }));
 
 app.post('/api/files/action', (req, res) => {
     const { action, fileName } = req.body;
     const filePath = path.join(containerDir, fileName);
 
-    if (!fs.existsSync(filePath)) return res.status(400).json({ status: 'error', message: 'الملف غير موجود' });
+    if (!fs.existsSync(filePath)) return res.status(400).json({ status: 'error' });
 
     if (action === 'unarchive') {
         try {
             const zip = new AdmZip(filePath);
             zip.extractAllTo(containerDir, true);
-            fs.unlinkSync(filePath);
-            return res.json({ status: 'success', message: 'تم فك الضغط بنجاح.' });
+            fs.unlinkSync(filePath); // مسح فوري لعدم تقل السيرفر
+            return res.json({ status: 'success' });
         } catch (e) {
-            return res.status(500).json({ status: 'error', message: 'الملف تالف' });
+            return res.status(500).json({ status: 'error' });
         }
     }
     if (action === 'delete') {
@@ -80,99 +77,69 @@ app.post('/api/files/action', (req, res) => {
     }
 });
 
-// نظام بث مخرجات الكونسول لحظة بلحظة (Server-Sent Events) لتقليد اللوحة الأصلية
+// بث حي للكونسول
 let logClients = [];
 app.get('/api/console/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     logClients.push(res);
-    req.on('close', () => {
-        logClients = logClients.filter(client => client !== res);
-    });
+    req.on('close', () => { logClients = logClients.filter(c => c !== res); });
 });
 
-function broadcastLog(message) {
-    logClients.forEach(client => client.write(`data: ${JSON.stringify({ log: message, status: botStatus })}\n\n`));
+function broadcastLog(msg) {
+    logClients.forEach(c => c.write(`data: ${JSON.stringify({ log: msg, status: botStatus })}\n\n`));
 }
 
-// تشغيل البوت بمحاكاة كاملة لـ OptikLink الذكية
-function startBotHardware() {
+function startBot() {
     botStatus = 'STARTING';
-    broadcastLog(`\n\x1b[36m««[OptikLink]»»\x1b[0m Checking server disk space usage...\n\x1b[36m««[OptikLink]»»\x1b[0m Ensuring file permissions are set correctly...\n\x1b[36m««[OptikLink]»»\x1b[0m Server marked as starting...`);
-
+    broadcastLog(`\n\x1b[36m[Pterodactyl Daemon]:\x1b[0m Checking server disk space usage, please wait...`);
+    broadcastLog(`\n\x1b[36m[Pterodactyl Daemon]:\x1b[0m Fetching dynamic build configuration...`);
+    
     const mainBotFile = path.join(containerDir, 'index.js');
     if (!fs.existsSync(mainBotFile)) {
         botStatus = 'OFFLINE';
-        broadcastLog(`\n\x1b[31m❌ [خطأ في تشغيل الحاوية]: ملف التشغيل الرئيسي index.js غير موجود بالخارج!\x1b[0m`);
+        broadcastLog(`\n\x1b[31m❌ [OptikLink Error]: index.js not found in root directory!\x1b[0m`);
         return;
     }
 
-    // محاكاة تنصيب الـ Packages التلقائية مثل لوحة OptikLink الفصيلية
-    broadcastLog(`\n\x1b[33m[OptikLink Hardware]>> Running auto npm install check...\x1b[0m`);
-    
-    // تشغيل عملية node عبر spawn لتوفير البث المباشر للسطور (Stream Logs)
-    activeProcess = spawn('node', ['index.js'], { cwd: containerDir });
-    botStatus = 'ONLINE';
+    setTimeout(() => {
+        botStatus = 'RUNNING';
+        broadcastLog(`\n\x1b[32m[Pterodactyl Daemon]:\x1b[0m Server marked as RUNNING. Starting execution pipeline...\n`);
+        
+        activeProcess = spawn('node', ['index.js'], { cwd: containerDir });
 
-    activeProcess.stdout.on('data', (data) => {
-        broadcastLog(data.toString());
-    });
+        activeProcess.stdout.on('data', (data) => broadcastLog(data.toString()));
+        activeProcess.stderr.on('data', (data) => broadcastLog(data.toString()));
 
-    activeProcess.stderr.on('data', (data) => {
-        broadcastLog(data.toString());
-    });
-
-    activeProcess.on('close', (code) => {
-        botStatus = 'OFFLINE';
-        broadcastLog(`\n\x1b[31m««[OptikLink]»» Server marked as offline...\x1b[0m`);
-        activeProcess = null;
-    });
+        activeProcess.on('close', () => {
+            botStatus = 'OFFLINE';
+            broadcastLog(`\n\x1b[31m[Pterodactyl Daemon]:\x1b[0m Server marked as OFFLINE.\x1b[0m`);
+            activeProcess = null;
+        });
+    }, 1500);
 }
 
-// أزرار التحكم اللحظية
 app.post('/api/bot/control', (req, res) => {
     const { action } = req.body;
-
-    if (action === 'start') {
-        if (activeProcess) return res.json({ status: 'info' });
-        startBotHardware();
-        return res.json({ status: 'success' });
-    }
-    if (action === 'stop') {
-        if (activeProcess) {
-            activeProcess.kill();
-            activeProcess = null;
-            botStatus = 'OFFLINE';
-            broadcastLog(`\n\x1b[31m««[OptikLink]»» Server marked as offline...\x1b[0m`);
-        }
-        return res.json({ status: 'success' });
-    }
-    if (action === 'restart') {
-        if (activeProcess) {
-            activeProcess.kill();
-        }
-        startBotHardware();
-        return res.json({ status: 'success' });
-    }
+    if (action === 'start') { if (!activeProcess) startBot(); }
+    if (action === 'stop' && activeProcess) { activeProcess.kill(); botStatus = 'OFFLINE'; }
+    if (action === 'restart') { if (activeProcess) activeProcess.kill(); startBot(); }
+    res.json({ status: 'success' });
 });
 
-// تنفيذ أوامر الكونسول من الـ Input السفلي
 app.post('/api/console/command', (req, res) => {
     const { command } = req.body;
-    if (!command) return res.json({ output: '' });
-
+    if (!command) return res.json({});
     if (activeProcess) {
         activeProcess.stdin.write(command + '\n');
-        return res.json({ output: '' });
     } else {
-        exec(command, { cwd: containerDir }, (error, stdout, stderr) => {
-            let output = stdout || stderr || 'تم تنفيذ الأمر بنجاح.';
-            broadcastLog(`\n${output}`);
+        exec(command, { cwd: containerDir }, (err, stdout, stderr) => {
+            broadcastLog(`\n$ ${command}\n${stdout || stderr || ''}`);
         });
-        res.json({ output: '' });
     }
+    res.json({});
 });
 
-app.listen(PORT, () => console.log(`المنصة تعمل بمحاكاة OptikLink على منفذ ${PORT}`));
-         
+app.listen(PORT, () => console.log(`لوحة المضاهاة تعمل بالكامل على منفذ ${PORT}`));
+                                              
