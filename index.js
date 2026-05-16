@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const AdmZip = require('adm-zip');
-const { exec, spawn } = require('child_process');
+const { exec } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 
@@ -16,13 +16,14 @@ if (!fs.existsSync(containerDir)) fs.mkdirSync(containerDir);
 
 let activeProcess = null;
 
+// إعداد رفع الملفات
 const storage = multer.diskStorage({
     destination: (req, file, cb) => cb(null, containerDir),
     filename: (req, file, cb) => cb(null, file.originalname)
 });
 const upload = multer({ storage: storage });
 
-// جلب الملفات بترتيب ثابت وسريع لضمان عدم حدوث تداخل
+// جلب قائمة الملفات بترتيب دقيق (المجلدات أولاً ثم الملفات)
 app.get('/api/files', (req, res) => {
     try {
         if (!fs.existsSync(containerDir)) return res.json({ status: 'success', files: [] });
@@ -41,31 +42,31 @@ app.get('/api/files', (req, res) => {
         files.sort((a, b) => b.isFolder - a.isFolder);
         res.json({ status: 'success', files });
     } catch (err) {
-        res.status(500).json({ status: 'error', message: 'تعذر قراءة الملفات' });
+        res.status(500).json({ status: 'error', message: 'تعذر قراءة ملفات الحاوية' });
     }
 });
 
-// رفع الملفات
+// استقبال ورفع الملفات
 app.post('/api/files/upload', upload.single('file'), (req, res) => {
     res.json({ status: 'success' });
 });
 
-// إدارة فك الضغط والحذف الحقيقي النهائي
+// معالج الفك والحذف النهائي الصارم
 app.post('/api/files/action', (req, res) => {
     const { action, fileName } = req.body;
     const filePath = path.join(containerDir, fileName);
 
     if (!fs.existsSync(filePath)) {
-        return res.status(400).json({ status: 'error', message: 'الملف غير موجود بالفعل على السيرفر' });
+        return res.status(400).json({ status: 'error', message: 'الملف غير موجود على السيرفر' });
     }
 
     if (action === 'unarchive') {
         try {
             const zip = new AdmZip(filePath);
             zip.extractAllTo(containerDir, true);
-            return res.json({ status: 'success', message: 'تم فك الضغط بنجاح تام.' });
+            return res.json({ status: 'success', message: 'تم فك الضغط بنجاح وتحديث الحاوية.' });
         } catch (e) {
-            return res.status(500).json({ status: 'error', message: 'فشل في فك الضغط.' });
+            return res.status(500).json({ status: 'error', message: 'حزمة الملفات تالفة أو غير مدعومة' });
         }
     }
 
@@ -76,40 +77,39 @@ app.post('/api/files/action', (req, res) => {
             } else {
                 fs.unlinkSync(filePath);
             }
-            return res.json({ status: 'success', message: 'تم الحذف النهائي بنجاح من جذور السيرفر.' });
+            return res.json({ status: 'success', message: 'تم الحذف من جذور السيرفر بنجاح.' });
         } catch (err) {
-            return res.status(500).json({ status: 'error', message: 'تعذر مسح الملف.' });
+            return res.status(500).json({ status: 'error', message: 'فشل حذف الملف المحدد.' });
         }
     }
 });
 
-// تشغيل الأوامر يدوياً من الكونسول من قبل المستخدم
+// تنفيذ الأوامر المكتوبة داخل الـ Input بالكونسول
 app.post('/api/console/command', (req, res) => {
     const { command } = req.body;
     
     if (!command) return res.json({ output: '' });
 
-    // تشغيل الأمر المباشر داخل الحاوية وإرجاع المخرجات للواجهة فوراً
     exec(command, { cwd: containerDir }, (error, stdout, stderr) => {
         let output = stdout || stderr || '';
         if (error && !stderr) {
-            output = `Error executing command: ${error.message}`;
+            output = `خطأ في التنفيذ: ${error.message}`;
         }
-        res.json({ output: output || 'Command executed with no output.' });
+        res.json({ output: output || 'تم تنفيذ الأمر بنجاح (بدون مخرجات نصية).' });
     });
 });
 
-// أزرار التحكم السريع (START, RESTART, STOP)
+// التحكم في حالة البوت (START, RESTART, STOP)
 app.post('/api/bot/control', (req, res) => {
     const { action } = req.body;
     const mainBotFile = path.join(containerDir, 'index.js');
 
     if (action === 'start') {
-        if (activeProcess) return res.json({ status: 'info', output: 'الحاوية قيد العمل بالفعل.' });
-        if (!fs.existsSync(mainBotFile)) return res.json({ status: 'error', output: 'خطأ: لم نجد ملف index.js الرئيسي لتشغيله!' });
+        if (activeProcess) return res.json({ status: 'info', output: 'البوت يعمل بالفعل حالياً.' });
+        if (!fs.existsSync(mainBotFile)) return res.json({ status: 'error', output: 'خطأ: لم يتم العثور على ملف التشغيل الرئيسي index.js داخل الحاوية!' });
 
         activeProcess = exec(`node index.js`, { cwd: containerDir });
-        return res.json({ status: 'success', output: 'Server marked as online...\n[OptikLink]>> جاري تشغيل سكريبت البوت حياً الآن...' });
+        return res.json({ status: 'success', output: 'Server marked as online...\n[OptikLink]>> جاري فحص ملفات التشغيل وتفعيل البوت حياً...' });
     }
 
     if (action === 'stop') {
@@ -118,14 +118,14 @@ app.post('/api/bot/control', (req, res) => {
             activeProcess = null;
             return res.json({ status: 'success', output: 'Server marked as offline...' });
         }
-        return res.json({ status: 'info', output: 'السيرفر متوقف حالياً.' });
+        return res.json({ status: 'info', output: 'الحاوية متوقفة بالفعل.' });
     }
 
     if (action === 'restart') {
         if (activeProcess) activeProcess.kill();
         activeProcess = exec(`node index.js`, { cwd: containerDir });
-        return res.json({ status: 'success', output: 'جاري عمل ريستارت شامل للحاوية...\nServer marked as online.' });
+        return res.json({ status: 'success', output: 'جاري عمل إعادة تشغيل شاملة للملفات...\nServer marked as online.' });
     }
 });
 
-app.listen(PORT, () => console.log(`لوحة التحكم المكتملة تعمل على منفذ ${PORT}`));
+app.listen(PORT, () => console.log(`المنصة الحقيقية تعمل بكفاءة على المنفذ ${PORT}`));
