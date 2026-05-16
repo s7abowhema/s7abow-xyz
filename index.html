@@ -12,6 +12,7 @@
             --text-muted: #626c93;
             --red: #da3637;
             --green: #2ea44f;
+            --orange: #d29922;
             --blue: #0076ff;
         }
         body {
@@ -20,70 +21,46 @@
             color: #fff;
             margin: 0;
             padding: 0;
-            user-select: none;
         }
-        .main-content { 
-            max-width: 1200px; 
-            margin: 0 auto; 
-            padding: 20px; 
-        }
-        .nav-tabs { 
-            display: flex; 
-            gap: 25px; 
-            border-bottom: 2px solid var(--border); 
-            margin-bottom: 20px; 
-            padding-bottom: 5px; 
-        }
-        .tab-btn { 
-            background: none; 
-            border: none; 
-            color: var(--text-muted); 
-            font-size: 16px; 
-            font-weight: bold; 
-            cursor: pointer; 
-            padding: 10px 5px;
-            transition: 0.2s;
-        }
-        .tab-btn.active { 
-            color: #fff; 
-            border-bottom: 3px solid var(--blue); 
-            margin-bottom: -8px; 
-        }
+        .main-content { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .nav-tabs { display: flex; gap: 25px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; font-weight: bold; cursor: pointer; padding: 10px 5px; }
+        .tab-btn.active { color: #fff; border-bottom: 3px solid var(--blue); margin-bottom: -2px; }
         
         .info-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
-        .status-dot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin-left: 5px; }
-        .status-offline { background: var(--red); }
-        .status-online { background: var(--green); }
+        .status-dot { width: 10px; height: 10px; display: inline-block; border-radius: 50%; margin-left: 5px; }
+        .status-OFFLINE { background: var(--red); }
+        .status-STARTING { background: var(--orange); animation: pulse 1s infinite alternate; }
+        .status-ONLINE { background: var(--green); }
         
+        @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
+
         .btn-action-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .btn-ctrl { padding: 12px 28px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: #fff; transition: 0.2s; }
-        .btn-ctrl:active { transform: scale(0.97); }
         .btn-start { background: var(--green); }
         .btn-restart { background: #5c6bc0; }
         .btn-stop { background: var(--red); }
         
         .console-container { background: #070913; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-        .console-screen { padding: 20px; font-family: monospace; height: 350px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
+        .console-screen { padding: 20px; font-family: monospace; height: 380px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; line-height: 1.5; }
         
         .console-input-area { border-top: 1px solid var(--border); background: #0b0d19; display: flex; align-items: center; padding: 12px 15px; }
-        .console-prefix { color: var(--green); font-family: monospace; font-weight: bold; margin-right: 10px; font-size: 15px; }
+        .console-prefix { color: var(--green); font-family: monospace; font-weight: bold; margin-right: 10px; }
         .console-input { flex: 1; background: none; border: none; color: #fff; font-family: monospace; font-size: 15px; outline: none; text-align: left; direction: ltr; }
         
         .files-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+        .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; }
         .file-table th, .file-table td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border); }
         .file-table th { color: var(--text-muted); font-size: 14px; }
-        .file-row:hover { background: rgba(255,255,255,0.02); }
         
-        .context-menu-btn { cursor: pointer; color: var(--text-muted); font-weight: bold; text-align: left; position: relative; padding: 0 10px; }
-        .dropdown-menu { display: none; position: absolute; left: 0; top: 20px; background: #181d30; border: 1px solid var(--border); border-radius: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
-        .dropdown-menu button { display: block; width: 130px; padding: 10px 15px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; font-size: 13px; }
+        .context-menu-btn { cursor: pointer; color: var(--text-muted); font-weight: bold; position: relative; padding: 0 10px; }
+        .dropdown-menu { display: none; position: absolute; left: 0; top: 20px; background: #181d30; border: 1px solid var(--border); border-radius: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .dropdown-menu button { display: block; width: 120px; padding: 10px 15px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; }
         .dropdown-menu button:hover { background: var(--blue); }
         .hidden { display: none !important; }
 
-        .upload-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 25, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
-        .spinner { width: 60px; height: 60px; border: 5px solid rgba(255, 255, 255, 0.1); border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        .upload-text { font-size: 16px; color: #fff; font-family: monospace; direction: ltr; }
+        .upload-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 25, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.1); border-top: 4px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
@@ -91,7 +68,7 @@
 
     <div id="uploadOverlay" class="upload-overlay hidden">
         <div class="spinner"></div>
-        <div id="uploadText" class="upload-text">Uploading...</div>
+        <div style="font-family: monospace; color: #fff;">Uploading to container...</div>
     </div>
 
     <div class="main-content">
@@ -102,8 +79,7 @@
 
         <div id="page-console">
             <div class="info-bar">
-                <span id="status-dot" class="status-dot status-offline"></span> حالة الحاوية: <span id="status-txt" style="color:#fff; margin-left:20px; font-weight:bold;">OFFLINE</span>
-                💾 استهلاك الموارد المقدر: <span style="color:#fff;">0.00% / 100%</span>
+                <span id="status-dot" class="status-dot status-OFFLINE"></span> حالة الحاوية: <span id="status-txt" style="color:#fff; font-weight:bold;">OFFLINE</span>
             </div>
             
             <div class="btn-action-group">
@@ -113,17 +89,17 @@
             </div>
             
             <div class="console-container">
-                <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
+                <div class="console-screen" id="console-output">««[OptikLink]»» Server marked as offline...</div>
                 <div class="console-input-area">
-                    <span class="console-prefix">optiklink@container:~$</span>
-                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter..." onkeydown="handleConsoleCommand(event)">
+                    <span class="console-prefix">$ Type a command...</span>
+                    <input type="text" id="cmdInput" class="console-input" placeholder="..." onkeydown="handleConsoleCommand(event)">
                 </div>
             </div>
         </div>
 
         <div id="page-files" class="hidden">
             <div class="files-top">
-                <span style="color: var(--text-muted);">المسار النشط: <code style="color:#fff; background:#181d30; padding:5px 10px; border-radius:4px;">/home/container</code></span>
+                <span style="color: var(--text-muted);">المسار النشط: <code style="color:#fff;">/home/container</code></span>
                 <div>
                     <input type="file" id="fileInput" style="display:none;" onchange="uploadFile()">
                     <button class="btn-ctrl btn-start" onclick="document.getElementById('fileInput').click()">UPLOAD</button>
@@ -139,17 +115,30 @@
                         <th style="text-align:left; padding-left:25px;">خيارات</th>
                     </tr>
                 </thead>
-                <tbody id="files-list">
-                    </tbody>
+                <tbody id="files-list"></tbody>
             </table>
         </div>
     </div>
 
 <script>
-    document.addEventListener('click', function(e) {
-        if (!e.target.classList.contains('context-menu-btn')) {
-            document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+    // تفعيل اتصال البث المباشر (SSE) لقراءة البيانات لايف بدون لاج كالأصلية تماماً
+    const eventSource = new EventSource('/api/console/stream');
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const out = document.getElementById('console-output');
+        
+        if (data.log) {
+            out.innerText += "\n" + data.log;
+            out.scrollTop = out.scrollHeight;
         }
+        
+        // تحديث ألوان الحالة ديناميكياً (OFFLINE / STARTING / ONLINE)
+        document.getElementById('status-dot').className = `status-dot status-${data.status}`;
+        document.getElementById('status-txt').textContent = data.status;
+    };
+
+    document.addEventListener('click', () => {
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
     });
 
     function switchPage(page) {
@@ -163,54 +152,32 @@
             document.getElementById('page-files').classList.remove('hidden');
             document.getElementById('t-console').classList.remove('active');
             document.getElementById('t-files').classList.add('active');
-            loadFiles(); // تحديث فوري عند فتح التبويب
+            loadFiles();
         }
     }
 
     async function sendControl(action) {
-        const out = document.getElementById('console-output');
-        const dot = document.getElementById('status-dot');
-        const txt = document.getElementById('status-txt');
-
-        const res = await fetch('/api/bot/control', {
+        await fetch('/api/bot/control', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action })
         });
-        const data = await res.json();
-        
-        out.innerText += "\n" + data.output;
-        out.scrollTop = out.scrollHeight;
-
-        if((action === 'start' || action === 'restart') && data.status === 'success') {
-            dot.className = "status-dot status-online";
-            txt.textContent = "ONLINE";
-        } else if (action === 'stop') {
-            dot.className = "status-dot status-offline";
-            txt.textContent = "OFFLINE";
-        }
     }
 
     async function handleConsoleCommand(event) {
         if (event.key === 'Enter') {
             const input = document.getElementById('cmdInput');
-            const out = document.getElementById('console-output');
             const command = input.value.trim();
-            
             if (!command) return;
 
-            out.innerText += `\n\noptiklink@container:~$ ${command}`;
+            document.getElementById('console-output').innerText += `\n$ ${command}`;
             input.value = '';
 
-            const res = await fetch('/api/console/command', {
+            await fetch('/api/console/command', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ command })
             });
-            const data = await res.json();
-
-            out.innerText += `\n${data.output}`;
-            out.scrollTop = out.scrollHeight;
         }
     }
 
@@ -221,19 +188,18 @@
         tbody.innerHTML = "";
 
         if(!data.files || data.files.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>الحاوية فارغة حالياً. يرجى رفع ملفات البوت.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>الحاوية فارغة.</td></tr>";
             return;
         }
 
         data.files.forEach((file, index) => {
             const icon = file.isFolder ? "📁" : "📄";
-            const fileColor = file.isFolder ? "#e0af68" : "#58a6ff";
             const isZip = file.name.toLowerCase().includes('.zip');
             const unarchiveBtn = isZip ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
 
             tbody.innerHTML += `
-                <tr class="file-row">
-                    <td style="color: ${fileColor}; font-weight: 500;">${icon} ${file.name}</td>
+                <tr style="border-bottom: 1px solid var(--border);">
+                    <td style="color: ${file.isFolder ? '#e0af68' : '#58a6ff'}">${icon} ${file.name}</td>
                     <td>${file.size}</td>
                     <td style="color: var(--text-muted); font-size:13px;">${file.time}</td>
                     <td class="context-menu-btn" style="text-align:left; padding-left:25px;" onclick="toggleMenu(event, ${index})">...
@@ -259,34 +225,28 @@
         const fileInput = document.getElementById('fileInput');
         if(fileInput.files.length === 0) return;
         
-        const file = fileInput.files[0];
         const formData = new FormData();
-        formData.append('file', file);
+        formData.append('file', fileInput.files[0]);
 
-        const overlay = document.getElementById('uploadOverlay');
-        overlay.classList.remove('hidden');
+        document.getElementById('uploadOverlay').classList.remove('hidden');
 
         const xhr = new XMLHttpRequest();
-        xhr.addEventListener('load', () => {
-            overlay.classList.add('hidden');
-            fileInput.value = ""; 
-            loadFiles(); // تحديث فوري تلقائي بعد انتهاء الرفع
-        });
-
+        xhr.onload = () => {
+            document.getElementById('uploadOverlay').classList.add('hidden');
+            fileInput.value = "";
+            loadFiles();
+        };
         xhr.open('POST', '/api/files/upload');
         xhr.send(formData);
     }
 
     async function fileAction(action, fileName) {
         const cleanName = fileName.endsWith('/') ? fileName.slice(0, -1) : fileName;
-
-        const res = await fetch('/api/files/action', {
+        await fetch('/api/files/action', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action, fileName: cleanName })
         });
-        
-        // تحديث القائمة فوراً وبدون تأخير بعد المسح أو فك الضغط
         loadFiles();
     }
 </script>
