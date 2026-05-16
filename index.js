@@ -10,94 +10,93 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
-let botProcess = null; // لتخزين عملية البوت المشغل
+const containerDir = path.join(__dirname, 'container');
 
-// إعداد مكتبة Multer لاستقبال ملفات الـ Zip
+// إنشاء مجلد الحاوية الافتراضي إذا لم يكن موجوداً
+if (!fs.existsSync(containerDir)) fs.mkdirSync(containerDir);
+
+let botProcess = null;
+
+// إعداد الرفع للمجلد الحاوي
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        const uploadDir = path.join(__dirname, 'uploads');
-        if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, 'bot-files.zip');
-    }
+    destination: (req, file, cb) => cb(null, containerDir),
+    filename: (req, file, cb) => cb(null, file.originalname)
 });
 const upload = multer({ storage: storage });
 
-// الصفحة الرئيسية للموقع
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// 1. نقطة النهاية لرفع ملفات البوت وفك ضغطها
-app.post('/api/upload-bot', upload.single('botZip'), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ status: 'error', message: 'الرجاء اختيار ملف Zip لرفعه.' });
-    }
-
+// جلب قائمة الملفات الحالية داخل المجلد /home/container
+app.get('/api/files', (req, res) => {
     try {
-        const zipPath = req.file.path;
-        const targetDir = path.join(__dirname, 'user_bot');
-
-        // تنظيف المجلد القديم إن وجد
-        if (fs.existsSync(targetDir)) {
-            fs.rmSync(targetDir, { recursive: true, force: true });
-        }
-        fs.mkdirSync(targetDir);
-
-        // فك ضغط ملف البوت
-        const zip = new AdmZip(zipPath);
-        zip.extractAllTo(targetDir, true);
-
-        // حذف ملف الـ zip المضغوط بعد فكه لتوفير المساحة
-        fs.unlinkSync(zipPath);
-
-        res.json({ status: 'success', message: 'تم رفع ملفات البوت وفك ضغطها بنجاح في السيرفر!' });
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ status: 'error', message: 'حدث خطأ أثناء فك ضغط الملف.' });
+        const files = fs.readdirSync(containerDir).map(file => {
+            const stats = fs.statSync(path.join(containerDir, file));
+            return {
+                name: file,
+                size: (stats.size / (1024 * 1024)).toFixed(2) + " MB",
+                time: stats.mtime.toLocaleString('en-US', { hour12: true })
+            };
+        });
+        res.json({ status: 'success', files });
+    } catch (err) {
+        res.status(500).json({ status: 'error', message: 'تعذر قراءة الملفات' });
     }
 });
 
-// 2. نقطة النهاية للتحكم في تشغيل البوت المرفوع
-app.post('/api/bot-control', (req, res) => {
+// رفع ملف جديد
+app.post('/api/files/upload', upload.single('file'), (req, res) => {
+    res.json({ status: 'success', message: 'تم رفع الملف بنجاح!' });
+});
+
+// إجراءات الملفات (فك ضغط أو حذف)
+app.post('/api/files/action', (req, res) => {
+    const { action, fileName } = req.body;
+    const filePath = path.join(containerDir, fileName);
+
+    if (!fs.existsSync(filePath)) return res.status(400).json({ status: 'error', message: 'الملف غير موجود' });
+
+    if (action === 'unarchive') {
+        try {
+            const zip = new AdmZip(filePath);
+            zip.extractAllTo(containerDir, true);
+            return res.json({ status: 'success', message: 'تم فك ضغط الملف بنجاح.' });
+        } catch (e) {
+            return res.status(500).json({ status: 'error', message: 'فشل فك الضغط.' });
+        }
+    }
+
+    if (action === 'delete') {
+        fs.unlinkSync(filePath);
+        return res.json({ status: 'success', message: 'تم حذف الملف بنجاح.' });
+    }
+    res.status(400).json({ status: 'error', message: 'إجراء غير معروف' });
+});
+
+// التحكم في الـ Console (START, STOP, RESTART)
+app.post('/api/bot/control', (req, res) => {
     const { action } = req.body;
-    const botMainFile = path.join(__dirname, 'user_bot', 'index.js'); // يفترض أن الملف الرئيسي اسمه index.js داخل الـ zip
+    const mainBotFile = path.join(containerDir, 'index.js');
 
     if (action === 'start') {
-        if (botProcess) {
-            return res.json({ status: 'info', message: 'البوت يعمل بالفعل حالياً.' });
-        }
+        if (botProcess) return res.json({ status: 'info', output: 'السيرفر يعمل بالفعل.' });
+        if (!fs.existsSync(mainBotFile)) return res.json({ status: 'error', output: 'خطأ: لم يتم العثور على ملف index.js في المجلد الأساسي بعد فك الضغط!' });
 
-        if (!fs.existsSync(botMainFile)) {
-            return res.status(400).json({ status: 'error', message: 'لم يتم العثور على ملف index.js رئيسي داخل البوت المرفوع.' });
-        }
-
-        // تشغيل البوت الفعلي المرفوع من قبل المستخدم
-        botProcess = exec(`node ${botMainFile}`, (error, stdout, stderr) => {
-            if (error) {
-                console.error(`خطأ البوت: ${error}`);
-                botProcess = null;
-                return;
-            }
-        });
-
-        return res.json({ status: 'success', message: 'تم تشغيل البوت المرفوع بنجاح على الاستضافة!' });
+        botProcess = exec(`node index.js`, { cwd: containerDir });
+        return res.json({ status: 'success', output: 'Server marked as online...\n[OptikLink]>> جاري تحميل حزم الـ Plugins والاتصال بويندوز السيرفر...' });
     }
 
     if (action === 'stop') {
         if (botProcess) {
             botProcess.kill();
             botProcess = null;
-            return res.json({ status: 'success', message: 'تم إيقاف تشغيل البوت بنجاح.' });
+            return res.json({ status: 'success', output: 'Server marked as offline...' });
         }
-        return res.json({ status: 'info', message: 'البوت متوقف بالفعل.' });
+        return res.json({ status: 'info', output: 'السيرفر مغلق بالفعل.' });
     }
 
-    res.status(400).json({ status: 'error', message: 'أمر غير معروف.' });
+    if (action === 'restart') {
+        if (botProcess) botProcess.kill();
+        botProcess = exec(`node index.js`, { cwd: containerDir });
+        return res.json({ status: 'success', output: 'جاري إعادة تشغيل الحاوية...\nServer marked as online.' });
+    }
 });
 
-app.listen(PORT, () => {
-    console.log(`موقع الاستضافة يعمل الآن على المنفذ: ${PORT}`);
-});
+app.listen(PORT, () => console.log(`سيرفر Optiklink يعمل على منفذ ${PORT}`));
