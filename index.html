@@ -22,49 +22,50 @@
             padding: 0;
             user-select: none;
         }
-        .sidebar {
-            width: 70px;
-            background: var(--bg-card);
-            position: fixed;
-            height: 100vh;
-            border-left: 1px solid var(--border);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 20px;
-            gap: 25px;
+        .main-content { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px; 
         }
-        .sidebar-icon {
-            color: var(--text-muted);
-            font-size: 20px;
-            cursor: pointer;
-            padding: 10px;
-            border-radius: 8px;
+        .nav-tabs { 
+            display: flex; 
+            gap: 25px; 
+            border-bottom: 2px solid var(--border); 
+            margin-bottom: 20px; 
+            padding-bottom: 5px; 
+        }
+        .tab-btn { 
+            background: none; 
+            border: none; 
+            color: var(--text-muted); 
+            font-size: 16px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            padding: 10px 5px;
             transition: 0.2s;
         }
-        .sidebar-icon.active { color: var(--blue); background: rgba(0,118,255,0.1); }
-        .main-content { margin-right: 70px; padding: 30px; }
-        .nav-tabs { display: flex; gap: 20px; border-bottom: 2px solid var(--border); margin-bottom: 20px; padding-bottom: 10px; }
-        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; font-weight: bold; cursor: pointer; }
-        .tab-btn.active { color: #fff; border-bottom: 2px solid var(--blue); padding-bottom: 10px; margin-bottom: -12px; }
+        .tab-btn.active { 
+            color: #fff; 
+            border-bottom: 3px solid var(--blue); 
+            margin-bottom: -8px; 
+        }
         
         .info-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
         .status-dot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin-left: 5px; }
         .status-offline { background: var(--red); }
         .status-online { background: var(--green); }
         
-        .btn-action-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        .btn-ctrl { padding: 10px 24px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; transition: 0.1s; }
-        .btn-ctrl:active { transform: scale(0.98); }
+        .btn-action-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .btn-ctrl { padding: 12px 28px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; color: #fff; transition: 0.2s; }
+        .btn-ctrl:active { transform: scale(0.97); }
         .btn-start { background: var(--green); }
         .btn-restart { background: #5c6bc0; }
         .btn-stop { background: var(--red); }
         
         .console-container { background: #070913; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
-        .console-screen { padding: 20px; font-family: monospace; height: 320px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
+        .console-screen { padding: 20px; font-family: monospace; height: 350px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
         
-        /* موجه المدخلات الحية للكونسول */
-        .console-input-area { border-top: 1px solid var(--border); background: #0b0d19; display: flex; align-items: center; padding: 10px 15px; }
+        .console-input-area { border-top: 1px solid var(--border); background: #0b0d19; display: flex; align-items: center; padding: 12px 15px; }
         .console-prefix { color: var(--green); font-family: monospace; font-weight: bold; margin-right: 10px; font-size: 15px; }
         .console-input { flex: 1; background: none; border: none; color: #fff; font-family: monospace; font-size: 15px; outline: none; text-align: left; direction: ltr; }
         
@@ -80,7 +81,7 @@
         .dropdown-menu button:hover { background: var(--blue); }
         .hidden { display: none !important; }
 
-        .upload-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 25, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .upload-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 25, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .spinner { width: 60px; height: 60px; border: 5px solid rgba(255, 255, 255, 0.1); border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
         .upload-text { font-size: 16px; color: #fff; font-family: monospace; direction: ltr; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -93,21 +94,16 @@
         <div id="uploadText" class="upload-text">Uploaded 0 kB of 0 kB (0%)</div>
     </div>
 
-    <div class="sidebar">
-        <div class="sidebar-icon active" id="s-console" onclick="switchPage('console')">💻</div>
-        <div class="sidebar-icon" id="s-files" onclick="switchPage('files')">📂</div>
-    </div>
-
     <div class="main-content">
         <div class="nav-tabs">
-            <button class="tab-btn active" id="t-console" onclick="switchPage('console')">الكونسول الرئيسي</button>
-            <button class="tab-btn" id="t-files" onclick="switchPage('files')">إدارة الملفات</button>
+            <button class="tab-btn active" id="t-console" onclick="switchPage('console')">💻 الكونسول الرئيسي</button>
+            <button class="tab-btn" id="t-files" onclick="switchPage('files')">📂 إدارة الملفات</button>
         </div>
 
         <div id="page-console">
             <div class="info-bar">
-                <span id="status-dot" class="status-dot status-offline"></span> حالة السيرفر: <span id="status-txt" style="color:#fff; margin-left:20px; font-weight:bold;">OFFLINE</span>
-                💾 الاستهلاك المقدر: <span style="color:#fff;">0.00% / 100%</span>
+                <span id="status-dot" class="status-dot status-offline"></span> حالة الحاوية: <span id="status-txt" style="color:#fff; margin-left:20px; font-weight:bold;">OFFLINE</span>
+                💾 استهلاك الموارد المقدر: <span style="color:#fff;">0.00% / 100%</span>
             </div>
             
             <div class="btn-action-group">
@@ -120,14 +116,14 @@
                 <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
                 <div class="console-input-area">
                     <span class="console-prefix">optiklink@container:~$</span>
-                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter (مثال: npm start أو ls)..." onkeydown="handleConsoleCommand(event)">
+                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter (مثال: npm install أو ls)..." onkeydown="handleConsoleCommand(event)">
                 </div>
             </div>
         </div>
 
         <div id="page-files" class="hidden">
             <div class="files-top">
-                <span style="color: var(--text-muted);">المسار المفتوح حالياً: <code style="color:#fff; background:#181d30; padding:4px 8px; border-radius:4px;">/home/container</code></span>
+                <span style="color: var(--text-muted);">المسار النشط: <code style="color:#fff; background:#181d30; padding:5px 10px; border-radius:4px;">/home/container</code></span>
                 <div>
                     <input type="file" id="fileInput" style="display:none;" onchange="uploadFile()">
                     <button class="btn-ctrl btn-start" onclick="document.getElementById('fileInput').click()">UPLOAD</button>
@@ -150,6 +146,7 @@
     </div>
 
 <script>
+    // إغلاق قوائم الخيارات عند الضغط بالخارج
     document.addEventListener('click', function(e) {
         if (!e.target.classList.contains('context-menu-btn')) {
             document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
@@ -162,15 +159,11 @@
             document.getElementById('page-files').classList.add('hidden');
             document.getElementById('t-console').classList.add('active');
             document.getElementById('t-files').classList.remove('active');
-            document.getElementById('s-console').classList.add('active');
-            document.getElementById('s-files').classList.remove('active');
         } else {
             document.getElementById('page-console').classList.add('hidden');
             document.getElementById('page-files').classList.remove('hidden');
             document.getElementById('t-console').classList.remove('active');
             document.getElementById('t-files').classList.add('active');
-            document.getElementById('s-console').classList.remove('active');
-            document.getElementById('s-files').classList.add('active');
             loadFiles();
         }
     }
@@ -201,7 +194,7 @@
         }
     }
 
-    // إرسال وتنفيذ أوامر الكونسول المدخلة يدوياً
+    // إرسال أوامر الكونسول النصية
     async function handleConsoleCommand(event) {
         if (event.key === 'Enter') {
             const input = document.getElementById('cmdInput');
@@ -232,14 +225,17 @@
         tbody.innerHTML = "";
 
         if(data.files.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>المجلد فارغ تماماً حالياً.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>الحاوية فارغة حالياً. يرجى رفع ملفات البوت.</td></tr>";
             return;
         }
 
         data.files.forEach((file, index) => {
             const icon = file.isFolder ? "📁" : "📄";
             const fileColor = file.isFolder ? "#e0af68" : "#58a6ff";
-            const unarchiveBtn = file.name.endsWith('.zip/') || file.name.endsWith('.zip') ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
+            
+            // التحقق من الملف المضغوط لإظهار زر Unarchive بشكل صحيح
+            const isZip = file.name.toLowerCase().includes('.zip');
+            const unarchiveBtn = isZip ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
 
             tbody.innerHTML += `
                 <tr class="file-row">
@@ -290,7 +286,7 @@
         xhr.addEventListener('load', () => {
             overlay.classList.add('hidden');
             fileInput.value = ""; 
-            setTimeout(loadFiles, 400); // مهلة صغيرة جداً لضمان انتهاء كتابة الهاردسك على السيرفر
+            setTimeout(loadFiles, 400); // مهلة قصيرة لضمان تحديث التخزين على Railway
         });
 
         xhr.open('POST', '/api/files/upload');
@@ -298,18 +294,19 @@
     }
 
     async function fileAction(action, fileName) {
-        // تنظيف الاسم من علامة المجلد الـ '/' إن وجدت لضمان الحذف الصحيح
         const cleanName = fileName.endsWith('/') ? fileName.slice(0, -1) : fileName;
 
-        const res = await fetch('/api/files/action', {
+        await fetch('/api/files/action', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ action, fileName: cleanName })
         });
         
-        // مسح الكاش وتحديث شجرة الملفات الحية فوراً
+        // تحديث فوري وحقيقي لشجرة الملفات
         setTimeout(loadFiles, 300);
     }
 </script>
+</body>
+</html>
 </body>
 </html>
