@@ -20,6 +20,7 @@
             color: #fff;
             margin: 0;
             padding: 0;
+            user-select: none;
         }
         .sidebar {
             width: 70px;
@@ -39,6 +40,7 @@
             cursor: pointer;
             padding: 10px;
             border-radius: 8px;
+            transition: 0.2s;
         }
         .sidebar-icon.active { color: var(--blue); background: rgba(0,118,255,0.1); }
         .main-content { margin-right: 70px; padding: 30px; }
@@ -46,29 +48,29 @@
         .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 16px; font-weight: bold; cursor: pointer; }
         .tab-btn.active { color: #fff; border-bottom: 2px solid var(--blue); padding-bottom: 10px; margin-bottom: -12px; }
         
-        /* كروت الستيت والكونسول */
         .info-bar { background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 15px; margin-bottom: 20px; font-size: 14px; color: var(--text-muted); }
         .status-dot { width: 8px; height: 8px; display: inline-block; border-radius: 50%; margin-left: 5px; }
         .status-offline { background: var(--red); }
         .status-online { background: var(--green); }
         
         .btn-action-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        .btn-ctrl { padding: 8px 20px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; }
+        .btn-ctrl { padding: 10px 24px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: #fff; transition: 0.1s; }
+        .btn-ctrl:active { transform: scale(0.98); }
         .btn-start { background: var(--green); }
         .btn-restart { background: #5c6bc0; }
         .btn-stop { background: var(--red); }
         
-        .console-screen { background: #070913; border: 1px solid var(--border); border-radius: 6px; padding: 20px; font-family: monospace; height: 300px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; }
+        .console-screen { background: #070913; border: 1px solid var(--border); border-radius: 6px; padding: 20px; font-family: monospace; height: 320px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
         
-        /* مدير الملفات */
         .files-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; }
+        .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
         .file-table th, .file-table td { padding: 15px; text-align: right; border-bottom: 1px solid var(--border); }
         .file-table th { color: var(--text-muted); font-size: 14px; }
         .file-row:hover { background: rgba(255,255,255,0.02); }
-        .context-menu-btn { cursor: pointer; color: var(--text-muted); font-weight: bold; text-align: left; position: relative; }
-        .dropdown-menu { display: none; position: absolute; left: 0; background: #181d30; border: 1px solid var(--border); border-radius: 4px; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .dropdown-menu button { display: block; width: 120px; padding: 10px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; font-size: 13px; }
+        
+        .context-menu-btn { cursor: pointer; color: var(--text-muted); font-weight: bold; text-align: left; position: relative; padding: 0 10px; }
+        .dropdown-menu { display: none; position: absolute; left: 0; top: 20px; background: #181d30; border: 1px solid var(--border); border-radius: 4px; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.6); }
+        .dropdown-menu button { display: block; width: 130px; padding: 10px 15px; background: none; border: none; color: #fff; text-align: right; cursor: pointer; font-size: 13px; }
         .dropdown-menu button:hover { background: var(--blue); }
         .hidden { display: none !important; }
     </style>
@@ -76,8 +78,8 @@
 <body>
 
     <div class="sidebar">
-        <div class="sidebar-icon active" onclick="switchPage('console')">💻</div>
-        <div class="sidebar-icon" onclick="switchPage('files')">📂</div>
+        <div class="sidebar-icon active" id="s-console" onclick="switchPage('console')">💻</div>
+        <div class="sidebar-icon" id="s-files" onclick="switchPage('files')">📂</div>
     </div>
 
     <div class="main-content">
@@ -88,8 +90,8 @@
 
         <div id="page-console">
             <div class="info-bar">
-                <span id="status-dot" class="status-dot status-offline"></span> حالة الحاوية: <span id="status-txt" style="color:#fff; margin-left:20px;">OFFLINE</span>
-                💾 الذاكرة المستهلكة: <span style="color:#fff;">0 KB / 1 GB</span>
+                <span id="status-dot" class="status-dot status-offline"></span> حالة السيرفر: <span id="status-txt" style="color:#fff; margin-left:20px; font-weight:bold;">OFFLINE</span>
+                💾 الاستهلاك المقدر: <span style="color:#fff;">0.00% / 100%</span>
             </div>
             
             <div class="btn-action-group">
@@ -98,14 +100,12 @@
                 <button class="btn-ctrl btn-stop" onclick="sendControl('stop')">STOP</button>
             </div>
             
-            <div class="console-screen" id="console-output">
-                [OptikLink]>> Server marked as offline...
-            </div>
+            <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
         </div>
 
         <div id="page-files" class="hidden">
             <div class="files-top">
-                <span style="color: var(--text-muted);">المسار الحلي: <code style="color:#fff;">/home/container/</code></span>
+                <span style="color: var(--text-muted);">المسار المفتوح حالياً: <code style="color:#fff; background:#181d30; padding:4px 8px; border-radius:4px;">/home/container</code></span>
                 <div>
                     <input type="file" id="fileInput" style="display:none;" onchange="uploadFile()">
                     <button class="btn-ctrl btn-start" onclick="document.getElementById('fileInput').click()">UPLOAD</button>
@@ -115,10 +115,10 @@
             <table class="file-table">
                 <thead>
                     <tr>
-                        <th>اسم الملف</th>
+                        <th>اسم الملف / المجلد</th>
                         <th>الحجم</th>
-                        <th>تاريخ الرفع</th>
-                        <th style="text-align:left;">خيارات</th>
+                        <th>تاريخ التعديل</th>
+                        <th style="text-align:left; padding-left:25px;">خيارات</th>
                     </tr>
                 </thead>
                 <tbody id="files-list">
@@ -128,16 +128,129 @@
     </div>
 
 <script>
-    // التبديل بين الكونسول والملفات
+    // إغلاق أي قائمة خيارات مفتوحة عند الضغط في أي مكان فارغ بالصفحة تسريعاً للتصفح
+    document.addEventListener('click', function(e) {
+        if (!e.target.classList.contains('context-menu-btn')) {
+            document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        }
+    });
+
     function switchPage(page) {
         if(page === 'console') {
             document.getElementById('page-console').classList.remove('hidden');
             document.getElementById('page-files').classList.add('hidden');
             document.getElementById('t-console').classList.add('active');
             document.getElementById('t-files').classList.remove('active');
+            document.getElementById('s-console').classList.add('active');
+            document.getElementById('s-files').classList.remove('active');
         } else {
             document.getElementById('page-console').classList.add('hidden');
             document.getElementById('page-files').classList.remove('hidden');
+            document.getElementById('t-console').classList.remove('active');
+            document.getElementById('t-files').classList.add('active');
+            document.getElementById('s-console').classList.remove('active');
+            document.getElementById('s-files').classList.add('active');
+            loadFiles();
+        }
+    }
+
+    async function sendControl(action) {
+        const out = document.getElementById('console-output');
+        const dot = document.getElementById('status-dot');
+        const txt = document.getElementById('status-txt');
+
+        const res = await fetch('/api/bot/control', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action })
+        });
+        const data = await res.json();
+        
+        out.innerText += "\n" + data.output;
+        out.scrollTop = out.scrollHeight;
+
+        if(action === 'start' || action === 'restart') {
+            if(data.status !== 'error') {
+                dot.className = "status-dot status-online";
+                txt.textContent = "ONLINE";
+            }
+        } else {
+            dot.className = "status-dot status-offline";
+            txt.textContent = "OFFLINE";
+        }
+    }
+
+    async function loadFiles() {
+        const tbody = document.getElementById('files-list');
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>جاري تحديث الحاوية...</td></tr>";
+        
+        const res = await fetch('/api/files');
+        const data = await res.json();
+        tbody.innerHTML = "";
+
+        if(data.files.length === 0) {
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>المجلد فارغ، ارفع ملف البوت المضغوط .zip وابدأ بالعمل.</td></tr>";
+            return;
+        }
+
+        data.files.forEach((file, index) => {
+            const icon = file.isFolder ? "📁" : "📄";
+            const fileColor = file.isFolder ? "#e0af68" : "#58a6ff";
+            const unarchiveBtn = file.name.endsWith('.zip') ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
+
+            tbody.innerHTML += `
+                <tr class="file-row">
+                    <td style="color: ${fileColor}; font-weight: 500;">${icon} ${file.name}</td>
+                    <td>${file.size}</td>
+                    <td style="color: var(--text-muted); font-size:13px;">${file.time}</td>
+                    <td class="context-menu-btn" style="text-align:left; padding-left:25px;" onclick="toggleMenu(event, ${index})">...
+                        <div class="dropdown-menu" id="menu-${index}">
+                            ${unarchiveBtn}
+                            <button onclick="fileAction('delete', '${file.name}')" style="color:var(--red);">Delete</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    }
+
+    function toggleMenu(event, index) {
+        event.stopPropagation();
+        const menu = document.getElementById(`menu-${index}`);
+        const current = menu.style.display;
+        document.querySelectorAll('.dropdown-menu').forEach(m => m.style.display = 'none');
+        menu.style.display = current === 'block' ? 'none' : 'block';
+    }
+
+    async function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        if(fileInput.files.length === 0) return;
+        
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        const tbody = document.getElementById('files-list');
+        tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--blue);'>جاري رفع الحزمة للسيرفر بنجاح...</td></tr>";
+
+        await fetch('/api/files/upload', { method: 'POST', body: formData });
+        fileInput.value = ""; // تنظيف المدخل
+        loadFiles();
+    }
+
+    async function fileAction(action, fileName) {
+        const res = await fetch('/api/files/action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action, fileName })
+        });
+        const data = await res.json();
+        
+        // إعادة تحديث قائمة الملفات فوراً بعد الحذف أو الفك التلقائي لضمان السرعة والشفافية
+        loadFiles();
+    }
+</script>
+</body>
+</html>
             document.getElementById('t-console').classList.remove('active');
             document.getElementById('t-files').classList.add('active');
             loadFiles();
