@@ -60,7 +60,13 @@
         .btn-restart { background: #5c6bc0; }
         .btn-stop { background: var(--red); }
         
-        .console-screen { background: #070913; border: 1px solid var(--border); border-radius: 6px; padding: 20px; font-family: monospace; height: 320px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
+        .console-container { background: #070913; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+        .console-screen { padding: 20px; font-family: monospace; height: 320px; overflow-y: auto; color: #a5b3e6; text-align: left; direction: ltr; white-space: pre-wrap; }
+        
+        /* موجه المدخلات الحية للكونسول */
+        .console-input-area { border-top: 1px solid var(--border); background: #0b0d19; display: flex; align-items: center; padding: 10px 15px; }
+        .console-prefix { color: var(--green); font-family: monospace; font-weight: bold; margin-right: 10px; font-size: 15px; }
+        .console-input { flex: 1; background: none; border: none; color: #fff; font-family: monospace; font-size: 15px; outline: none; text-align: left; direction: ltr; }
         
         .files-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .file-table { width: 100%; border-collapse: collapse; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
@@ -74,36 +80,10 @@
         .dropdown-menu button:hover { background: var(--blue); }
         .hidden { display: none !important; }
 
-        /* ================= شاشة الرفع الدائرية (Optiklink Loader) ================= */
-        .upload-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(11, 13, 25, 0.85);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 5px solid rgba(255, 255, 255, 0.1);
-            border-top: 5px solid #fff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
-        .upload-text {
-            font-size: 16px;
-            color: #fff;
-            font-family: monospace;
-            direction: ltr;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
+        .upload-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 13, 25, 0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .spinner { width: 60px; height: 60px; border: 5px solid rgba(255, 255, 255, 0.1); border-top: 5px solid #fff; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        .upload-text { font-size: 16px; color: #fff; font-family: monospace; direction: ltr; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -136,7 +116,13 @@
                 <button class="btn-ctrl btn-stop" onclick="sendControl('stop')">STOP</button>
             </div>
             
-            <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
+            <div class="console-container">
+                <div class="console-screen" id="console-output">[OptikLink]>> Server marked as offline...</div>
+                <div class="console-input-area">
+                    <span class="console-prefix">optiklink@container:~$</span>
+                    <input type="text" id="cmdInput" class="console-input" placeholder="اكتب الأمر هنا واضغط Enter (مثال: npm start أو ls)..." onkeydown="handleConsoleCommand(event)">
+                </div>
+            </div>
         </div>
 
         <div id="page-files" class="hidden">
@@ -215,22 +201,45 @@
         }
     }
 
+    // إرسال وتنفيذ أوامر الكونسول المدخلة يدوياً
+    async function handleConsoleCommand(event) {
+        if (event.key === 'Enter') {
+            const input = document.getElementById('cmdInput');
+            const out = document.getElementById('console-output');
+            const command = input.value.trim();
+            
+            if (!command) return;
+
+            out.innerText += `\n\noptiklink@container:~$ ${command}`;
+            input.value = '';
+
+            const res = await fetch('/api/console/command', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ command })
+            });
+            const data = await res.json();
+
+            out.innerText += `\n${data.output}`;
+            out.scrollTop = out.scrollHeight;
+        }
+    }
+
     async function loadFiles() {
         const tbody = document.getElementById('files-list');
-        tbody.innerHTML = "";
-        
         const res = await fetch('/api/files');
         const data = await res.json();
+        tbody.innerHTML = "";
 
         if(data.files.length === 0) {
-            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>المجلد فارغ، ارفع ملف البوت المضغوط .zip وابدأ بالعمل.</td></tr>";
+            tbody.innerHTML = "<tr><td colspan='4' style='text-align:center; color:var(--text-muted);'>المجلد فارغ تماماً حالياً.</td></tr>";
             return;
         }
 
         data.files.forEach((file, index) => {
             const icon = file.isFolder ? "📁" : "📄";
             const fileColor = file.isFolder ? "#e0af68" : "#58a6ff";
-            const unarchiveBtn = file.name.endsWith('.zip') ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
+            const unarchiveBtn = file.name.endsWith('.zip/') || file.name.endsWith('.zip') ? `<button onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
 
             tbody.innerHTML += `
                 <tr class="file-row">
@@ -256,7 +265,6 @@
         menu.style.display = current === 'block' ? 'none' : 'block';
     }
 
-    // الدالة المسؤولة عن الرفع مع حساب النسبة المئوية الدقيقة والعداد
     function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if(fileInput.files.length === 0) return;
@@ -267,34 +275,22 @@
 
         const overlay = document.getElementById('uploadOverlay');
         const uploadText = document.getElementById('uploadText');
-
-        // إظهار نافذة التحميل الدائرية
         overlay.classList.remove('hidden');
 
         const xhr = new XMLHttpRequest();
-
-        // تحديث أرقام النسبة المئوية وحجم البيانات المرفوعة حياً
         xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
                 const uploadedKb = (e.loaded / 1024).toFixed(1);
                 const totalKb = (e.total / 1024).toFixed(1);
                 const percent = Math.round((e.loaded / e.total) * 100);
-                
                 uploadText.textContent = `Uploaded ${uploadedKb} kB of ${totalKb} kB (${percent}%)`;
             }
         });
 
-        // عند اكتمال الرفع بنجاح
         xhr.addEventListener('load', () => {
-            overlay.classList.add('hidden'); // إخفاء العداد
-            fileInput.value = ""; 
-            loadFiles(); // تحديث الجدول فوراً
-        });
-
-        // في حال حدوث خطأ في الشبكة
-        xhr.addEventListener('error', () => {
-            alert('حدث خطأ أثناء الرفع، تأكد من اتصال السيرفر.');
             overlay.classList.add('hidden');
+            fileInput.value = ""; 
+            setTimeout(loadFiles, 400); // مهلة صغيرة جداً لضمان انتهاء كتابة الهاردسك على السيرفر
         });
 
         xhr.open('POST', '/api/files/upload');
@@ -302,12 +298,17 @@
     }
 
     async function fileAction(action, fileName) {
-        await fetch('/api/files/action', {
+        // تنظيف الاسم من علامة المجلد الـ '/' إن وجدت لضمان الحذف الصحيح
+        const cleanName = fileName.endsWith('/') ? fileName.slice(0, -1) : fileName;
+
+        const res = await fetch('/api/files/action', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ action, fileName })
+            body: JSON.stringify({ action, fileName: cleanName })
         });
-        loadFiles();
+        
+        // مسح الكاش وتحديث شجرة الملفات الحية فوراً
+        setTimeout(loadFiles, 300);
     }
 </script>
 </body>
