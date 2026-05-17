@@ -3,19 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OptikLink - GojoBot Panel</title>
+    <title>OptikLink - Control Panel</title>
     <style>
         :root {
-            --bg-darker: #0d101d;
-            --bg-card: #141929;
-            --bg-input: #090b14;
-            --border-panel: #1b2238;
-            --accent-blue: #3b82f6;
-            --status-green: #10b981;
-            --status-orange: #f59e0b;
-            --status-red: #ef4444;
+            --bg-darker: #0d111a;
+            --bg-card: #151a26;
+            --bg-input: #090c13;
+            --border-panel: #1f2638;
+            --accent-green: #10b981;
+            --accent-indigo: #4f46e5;
+            --accent-red: #ef4444;
             --text-light: #e2e8f0;
             --text-gray: #718096;
+            --accent-blue: #3b82f6;
         }
 
         body {
@@ -26,11 +26,10 @@
             padding: 0;
         }
 
-        /* الملاحة العلوية للوحة الأصلية */
         .top-navbar {
             background-color: var(--bg-card);
-            border-bottom: 2px solid var(--border-panel);
-            padding: 0 40px;
+            border-bottom: 1px solid var(--border-panel);
+            padding: 0 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -39,8 +38,8 @@
         .logo-section {
             font-weight: 700;
             font-size: 18px;
-            letter-spacing: 1px;
             color: #fff;
+            letter-spacing: 0.5px;
         }
         .nav-links {
             display: flex;
@@ -53,7 +52,7 @@
             color: var(--text-gray);
             font-size: 14px;
             font-weight: 600;
-            padding: 0 20px;
+            padding: 0 15px;
             cursor: pointer;
             height: 60px;
             display: flex;
@@ -67,116 +66,116 @@
         }
 
         .container {
-            max-width: 1300px;
-            margin: 30px auto;
-            padding: 0 20px;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
         }
 
-        /* كروت الموارد الثلاثية العلوية بالفيديو */
+        /* كروت مراقبة الموارد التفاعلية الحية */
         .resources-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        @media(min-width: 768px) {
+            .resources-grid { grid-template-columns: repeat(3, 1fr); }
         }
         .resource-card {
             background: var(--bg-card);
             border: 1px solid var(--border-panel);
             border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
+            padding: 16px;
         }
         .card-title {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-gray);
             text-transform: uppercase;
             font-weight: 700;
-            letter-spacing: 0.5px;
+            display: block;
+            margin-bottom: 6px;
         }
         .card-value {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 600;
             color: #fff;
         }
 
-        /* توزيع أزرار التحكم والكونسول */
-        .console-layout {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        .control-header {
+        /* شريط الحالة والتحكم بالاستضافة */
+        .status-and-buttons {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-panel);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 15px;
         }
-        .server-status-box {
+        .status-box {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
-        .status-indicator {
-            width: 10px;
-            height: 10px;
+        .status-dot {
+            width: 8px;
+            height: 8px;
             border-radius: 50%;
-            display: inline-block;
         }
-        .indicator-OFFLINE { background: var(--status-red); }
-        .indicator-STARTING { background: var(--status-orange); animation: blink 1s infinite alternate; }
-        .indicator-RUNNING { background: var(--status-green); }
+        .dot-OFFLINE { background: var(--accent-red); }
+        .dot-STARTING { background: #f59e0b; animation: blink 0.8s infinite alternate; }
+        .dot-RUNNING { background: var(--accent-green); }
 
-        @keyframes blink { from { opacity: 0.4; } to { opacity: 1; } }
+        @keyframes blink { from { opacity: 0.3; } to { opacity: 1; } }
 
-        .action-buttons { display: flex; gap: 10px; }
+        .btn-group { display: flex; gap: 8px; }
         .btn {
-            padding: 10px 24px;
+            padding: 8px 16px;
             border: none;
             border-radius: 4px;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
             color: #fff;
             transition: 0.2s;
         }
-        .btn-start { background-color: var(--status-green); }
-        .btn-restart { background-color: #4f46e5; }
-        .btn-stop { background-color: var(--status-red); }
+        .btn-start { background: var(--accent-green); }
+        .btn-restart { background: var(--accent-indigo); }
+        .btn-stop { background: var(--accent-red); }
         .btn:hover { filter: brightness(1.1); }
 
-        /* شاشة الكونسول وموجه الأوامر */
-        .terminal-wrapper {
-            background-color: #05070f;
+        /* منطقة الـ Terminal والكونسول المتكامل */
+        .terminal-container {
+            background-color: #060913;
             border: 1px solid var(--border-panel);
             border-radius: 6px;
             overflow: hidden;
         }
         .terminal-screen {
-            padding: 20px;
-            font-family: 'Courier New', Courier, monospace;
-            height: 400px;
+            padding: 15px;
+            font-family: monospace;
+            height: 380px;
             overflow-y: auto;
             color: #cbd5e1;
             white-space: pre-wrap;
-            font-size: 14px;
-            line-height: 1.6;
+            font-size: 13px;
+            line-height: 1.5;
         }
         .terminal-input-bar {
             display: flex;
             background-color: var(--bg-input);
             border-top: 1px solid var(--border-panel);
-            padding: 12px 20px;
+            padding: 10px 15px;
             align-items: center;
         }
-        .terminal-sign {
+        .terminal-prefix {
             color: var(--text-gray);
             font-family: monospace;
             margin-right: 10px;
-            font-weight: bold;
+            font-size: 13px;
         }
         .terminal-input {
             flex: 1;
@@ -184,85 +183,61 @@
             border: none;
             color: #fff;
             font-family: monospace;
-            font-size: 14px;
             outline: none;
+            font-size: 13px;
         }
 
-        /* صفحة إدارة وتصفح الملفات المماثلة تماماً */
-        .files-header {
+        /* قسم إدارة واستضافة الملفات الحقيقية */
+        .files-top-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
-        .file-table {
-            width: 100%;
-            border-collapse: collapse;
+        .file-list-box {
             background: var(--bg-card);
             border: 1px solid var(--border-panel);
             border-radius: 6px;
             overflow: hidden;
         }
-        .file-table th, .file-table td {
-            padding: 16px 20px;
-            text-align: left;
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
             border-bottom: 1px solid var(--border-panel);
         }
-        .file-table th {
-            color: var(--text-gray);
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        .file-row:hover { background-color: rgba(255,255,255,0.02); }
-        .file-icon-name { display: flex; align-items: center; gap: 12px; font-weight: 500; }
+        .file-item:last-child { border-bottom: none; }
+        .file-main-info { display: flex; align-items: center; gap: 12px; }
+        .file-display-name { font-size: 14px; font-weight: 500; color: #fff; }
+        .file-meta-data { font-size: 12px; color: var(--text-gray); margin-top: 2px; }
         
-        .opt-btn {
-            background: none;
+        .file-actions-btns { display: flex; gap: 8px; }
+        .act-btn {
             border: none;
-            color: var(--text-gray);
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            position: relative;
-        }
-        .dropdown-options {
-            display: none;
-            position: absolute;
-            right: 0;
-            top: 25px;
-            background: #1e2538;
-            border: 1px solid var(--border-panel);
+            padding: 6px 12px;
             border-radius: 4px;
-            z-index: 100;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
-        }
-        .dropdown-options button {
-            display: block;
-            width: 110px;
-            padding: 10px;
-            background: none;
-            border: none;
-            color: #fff;
-            text-align: left;
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 600;
             cursor: pointer;
+            color: white;
         }
-        .dropdown-options button:hover { background-color: var(--accent-blue); }
-        
+        .act-unarchive { background: var(--accent-indigo); }
+        .act-delete { background: var(--accent-red); }
+
         .hidden { display: none !important; }
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 1000; color: #fff; font-weight: bold; }
+        .overlay-loader { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 17, 26, 0.9); display: flex; justify-content: center; align-items: center; z-index: 10000; color: #fff; font-weight: bold; font-family: sans-serif; }
     </style>
 </head>
 <body>
 
-    <div id="loadingOverlay" class="overlay hidden">Uploading file to GojoBot storage...</div>
+    <div id="uploadLoader" class="overlay-loader hidden">Uploading file to storage container...</div>
 
     <nav class="top-navbar">
-        <div class="logo-section">OptikLink v1.0</div>
+        <div class="logo-section">OptikLink Cloud</div>
         <div class="nav-links">
-            <button class="nav-tab active" id="btn-tab-console" onclick="showPage('console')">Console</button>
-            <button class="nav-tab" id="btn-tab-files" onclick="showPage('files')">File Manager</button>
+            <button class="nav-tab active" id="tab-console" onclick="toggleView('console')">Console</button>
+            <button class="nav-tab" id="tab-files" onclick="toggleView('files')">File Manager</button>
         </div>
     </nav>
 
@@ -272,111 +247,95 @@
             <div class="resources-grid">
                 <div class="resource-card">
                     <span class="card-title">CPU Usage</span>
-                    <span class="card-value" id="val-cpu">0.00 %</span>
+                    <span class="card-value" id="cpu-monitor">0.00 %</span>
                 </div>
                 <div class="resource-card">
                     <span class="card-title">Memory (RAM)</span>
-                    <span class="card-value" id="val-ram">0.00 MB / 1024 MB</span>
+                    <span class="card-value" id="ram-monitor">0.00 MB / 1024 MB</span>
                 </div>
                 <div class="resource-card">
-                    <span class="card-title">Disk Usage</span>
-                    <span class="card-value" id="val-disk">14.2 MB / 5120 MB</span>
+                    <span class="card-title">Disk Storage</span>
+                    <span class="card-value">14.20 MB / 5120 MB</span>
                 </div>
             </div>
 
-            <div class="control-header">
-                <div class="server-status-box">
-                    <span id="status-ball" class="status-indicator indicator-OFFLINE"></span>
-                    <span id="status-word">OFFLINE</span>
+            <div class="status-and-buttons">
+                <div class="status-box">
+                    <span id="status-dot" class="status-dot dot-OFFLINE"></span>
+                    <span id="status-text">OFFLINE</span>
                 </div>
-                <div class="action-buttons">
-                    <button class="btn btn-start" onclick="triggerControl('start')">START</button>
-                    <button class="btn btn-restart" onclick="triggerControl('restart')">RESTART</button>
-                    <button class="btn btn-stop" onclick="triggerControl('stop')">STOP</button>
+                <div class="btn-group">
+                    <button class="btn btn-start" onclick="sendControl('start')">START</button>
+                    <button class="btn btn-restart" onclick="sendControl('restart')">RESTART</button>
+                    <button class="btn btn-stop" onclick="sendControl('stop')">STOP</button>
                 </div>
             </div>
 
-            <div class="terminal-wrapper">
-                <div class="terminal-screen" id="terminal-logs">Connecting to container node daemon...</div>
+            <div class="terminal-container">
+                <div class="terminal-screen" id="terminal-logs">Connecting to active terminal session...</div>
                 <div class="terminal-input-bar">
-                    <span class="terminal-sign">optiklink@pterodactyl:~#</span>
-                    <input type="text" id="terminal-cmd" class="terminal-input" placeholder="Type a command to execute..." onkeydown="sendInput(event)">
+                    <span class="terminal-prefix">optiklink@pterodactyl:~#</span>
+                    <input type="text" id="terminal-input" class="terminal-input" placeholder="Type a command..." onkeydown="submitCommand(event)">
                 </div>
             </div>
         </div>
 
         <div id="view-files" class="hidden">
-            <div class="files-header">
-                <span>Location: <code style="background:#1c2336; padding:4px 8px; border-radius:4px;">/home/container</code></span>
-                <div>
-                    <input type="file" id="upload-trigger" style="display:none;" onchange="performUpload()">
-                    <button class="btn btn-start" onclick="document.getElementById('upload-trigger').click()">Upload File</button>
-                </div>
+            <div class="files-top-bar">
+                <span>Directory: <code style="background:#1c2336; padding:3px 6px; border-radius:4px; font-size: 13px;">/home/container</code></span>
+                <input type="file" id="actual-uploader" style="display:none;" onchange="uploadFileToServer()">
+                <button class="btn btn-start" onclick="document.getElementById('actual-uploader').click()">Upload File</button>
             </div>
 
-            <table class="file-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Size</th>
-                        <th>Modified At</th>
-                        <th style="text-align: right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="files-rows-container"></tbody>
-            </table>
+            <div class="file-list-box" id="files-render-target"></div>
         </div>
 
     </div>
 
 <script>
-    // ربط خط البث المباشر مع السيرفر ليعمل بدون ريفريش تماماً
-    const sse = new EventSource('/api/console/stream');
-    sse.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-        const logBox = document.getElementById('terminal-logs');
+    // إقامة اتصال البث الحي المتزامن مع الاستضافة
+    const stream = new EventSource('/api/console/stream');
+    stream.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        const logs = document.getElementById('terminal-logs');
         
         if(data.log) {
-            logBox.innerText += "\n" + data.log;
-            logBox.scrollTop = logBox.scrollHeight;
+            logs.innerText += "\n" + data.log;
+            logs.scrollTop = logs.scrollHeight;
         }
 
-        // تحديث كروت الاستهلاك العلوية ذكياً حسب الحالة
-        document.getElementById('status-ball').className = `status-indicator indicator-${data.status}`;
-        document.getElementById('status-word').textContent = data.status;
+        document.getElementById('status-dot').className = `status-dot dot-${data.status}`;
+        document.getElementById('status-text').textContent = data.status;
 
+        // توليد ديناميكي لاستهلاك موارد الخادم بناءً على حالة الحاوية
         if (data.status === 'RUNNING') {
-            document.getElementById('val-cpu').textContent = (Math.random() * 5 + 2.1).toFixed(2) + " %";
-            document.getElementById('val-ram').textContent = (Math.random() * 20 + 145).toFixed(2) + " MB / 1024 MB";
+            document.getElementById('cpu-monitor').textContent = (Math.random() * 3 + 1.2).toFixed(2) + " %";
+            document.getElementById('ram-monitor').textContent = (Math.random() * 12 + 138).toFixed(2) + " MB / 1024 MB";
         } else if (data.status === 'STARTING') {
-            document.getElementById('val-cpu').textContent = "42.10 %";
-            document.getElementById('val-ram').textContent = "92.30 MB";
+            document.getElementById('cpu-monitor').textContent = "24.10 %";
+            document.getElementById('ram-monitor').textContent = "72.40 MB / 1024 MB";
         } else {
-            document.getElementById('val-cpu').textContent = "0.00 %";
-            document.getElementById('val-ram').textContent = "0.00 MB / 1024 MB";
+            document.getElementById('cpu-monitor').textContent = "0.00 %";
+            document.getElementById('ram-monitor').textContent = "0.00 MB / 1024 MB";
         }
     };
 
-    document.addEventListener('click', () => {
-        document.querySelectorAll('.dropdown-options').forEach(d => d.style.display = 'none');
-    });
-
-    function showPage(page) {
-        if(page === 'console') {
+    function toggleView(view) {
+        if(view === 'console') {
             document.getElementById('view-console').classList.remove('hidden');
             document.getElementById('view-files').classList.add('hidden');
-            document.getElementById('btn-tab-console').classList.add('active');
-            document.getElementById('btn-tab-files').classList.remove('active');
+            document.getElementById('tab-console').classList.add('active');
+            document.getElementById('tab-files').classList.remove('active');
         } else {
             document.getElementById('view-console').classList.add('hidden');
             document.getElementById('view-files').classList.remove('hidden');
-            document.getElementById('btn-tab-console').classList.remove('active');
-            document.getElementById('btn-tab-files').classList.add('active');
-            fetchDirectory();
+            document.getElementById('tab-console').classList.remove('active');
+            document.getElementById('tab-files').classList.add('active');
+            refreshStorage();
         }
     }
 
-    async function triggerControl(action) {
+    async function sendControl(action) {
         await fetch('/api/bot/control', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -384,97 +343,83 @@
         });
     }
 
-    async function sendInput(e) {
+    async function submitCommand(e) {
         if(e.key === 'Enter') {
-            const input = document.getElementById('terminal-cmd');
-            const val = input.value.trim();
-            if(!val) return;
+            const input = document.getElementById('terminal-input');
+            const command = input.value.trim();
+            if(!command) return;
 
-            document.getElementById('terminal-logs').innerText += `\n$ ${val}`;
+            document.getElementById('terminal-logs').innerText += `\n$ ${command}`;
             input.value = '';
 
             await fetch('/api/console/command', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ command: val })
+                body: JSON.stringify({ command })
             });
         }
     }
 
-    async function fetchDirectory() {
-        const target = document.getElementById('files-rows-container');
+    async function refreshStorage() {
+        const target = document.getElementById('files-render-target');
         const res = await fetch('/api/files');
         const data = await res.json();
         target.innerHTML = "";
 
         if(!data.files || data.files.length === 0) {
-            target.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-gray);">This directory is empty.</td></tr>`;
+            target.innerHTML = `<div style="padding:30px; text-align:center; color:var(--text-gray); font-size:14px;">Container storage is completely empty.</div>`;
             return;
         }
 
-        data.files.forEach((f, idx) => {
-            const isZip = f.name.toLowerCase().includes('.zip');
-            const unarchive = isZip ? `<button onclick="executeAction('unarchive', '${f.name}')">Unarchive</button>` : '';
-            const itemColor = f.isFolder ? '#f59e0b' : '#3b82f6';
-            const itemIcon = f.isFolder ? '📁' : '📄';
+        data.files.forEach(file => {
+            const isZip = file.name.toLowerCase().includes('.zip');
+            const unarchiveBtn = isZip ? `<button class="act-btn act-unarchive" onclick="fileAction('unarchive', '${file.name}')">Unarchive</button>` : '';
+            const icon = file.isFolder ? '📁' : '📄';
 
             target.innerHTML += `
-                <tr class="file-row">
-                    <td>
-                        <div class="file-icon-name">
-                            <span style="color:${itemColor}; font-size:18px;">${itemIcon}</span>
-                            <span>${f.name}</span>
+                <div class="file-item">
+                    <div class="file-main-info">
+                        <span style="font-size:18px;">${icon}</span>
+                        <div>
+                            <div class="file-display-name">${file.name}</div>
+                            <div class="file-meta-data">Size: ${file.size} | Modified: ${file.time}</div>
                         </div>
-                    </td>
-                    <td style="color:var(--text-gray); font-size:13px;">${f.size}</td>
-                    <td style="color:var(--text-gray); font-size:13px;">${f.time}</td>
-                    <td style="text-align: right;">
-                        <button class="opt-btn" onclick="openMenu(event, ${idx})">⋮
-                            <div class="dropdown-options" id="opt-${idx}">
-                                ${unarchive}
-                                <button onclick="executeAction('delete', '${f.name}')" style="color:var(--status-red);">Delete</button>
-                            </div>
-                        </button>
-                    </td>
-                </tr>
+                    </div>
+                    <div class="file-actions-btns">
+                        ${unarchiveBtn}
+                        <button class="act-btn act-delete" onclick="fileAction('delete', '${file.name}')">Delete</button>
+                    </div>
+                </div>
             `;
         });
     }
 
-    function openMenu(e, idx) {
-        e.stopPropagation();
-        const el = document.getElementById(`opt-${idx}`);
-        const current = el.style.display;
-        document.querySelectorAll('.dropdown-options').forEach(d => d.style.display = 'none');
-        el.style.display = current === 'block' ? 'none' : 'block';
-    }
-
-    function performUpload() {
-        const fileInput = document.getElementById('upload-trigger');
-        if(fileInput.files.length === 0) return;
+    function uploadFileToServer() {
+        const input = document.getElementById('actual-uploader');
+        if(input.files.length === 0) return;
 
         const fd = new FormData();
-        fd.append('file', fileInput.files[0]);
-        document.getElementById('loadingOverlay').classList.remove('hidden');
+        fd.append('file', input.files[0]);
+        document.getElementById('uploadLoader').classList.remove('hidden');
 
         const xhr = new XMLHttpRequest();
         xhr.onload = () => {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-            fileInput.value = "";
-            fetchDirectory();
+            document.getElementById('uploadLoader').classList.add('hidden');
+            input.value = "";
+            refreshStorage();
         };
         xhr.open('POST', '/api/files/upload');
         xhr.send(fd);
     }
 
-    async function executeAction(action, name) {
-        const clean = name.endsWith('/') ? name.slice(0, -1) : name;
+    async function fileAction(action, name) {
+        const cleanName = name.endsWith('/') ? name.slice(0, -1) : name;
         await fetch('/api/files/action', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ action, fileName: clean })
+            body: JSON.stringify({ action, fileName: cleanName })
         });
-        fetchDirectory();
+        refreshStorage();
     }
 </script>
 </body>
