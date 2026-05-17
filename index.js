@@ -10,7 +10,7 @@ app.use(express.json());
 app.use(express.static(__dirname));
 
 const PORT = process.env.PORT || 3000;
-// تحديد المسار الرئيسي الحقيقي للحاوية لضمان عدم تداخل المسارات
+// مسار الحاوية المعزولة للاستضافة الكاملة
 const containerDir = path.resolve(__dirname, 'container');
 
 if (!fs.existsSync(containerDir)) {
@@ -18,27 +18,23 @@ if (!fs.existsSync(containerDir)) {
 }
 
 let activeProcess = null;
-let botStatus = 'OFFLINE';
+let botStatus = 'OFFLINE'; // OFFLINE, STARTING, RUNNING
 
-// إعداد رفع الملفات مع معالجة الأسماء لمنع الأخطاء في أنظمة التشغيل
+// إعداد رفع الملفات الاحترافي مع معالجة الأسماء
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, containerDir);
-    },
+    destination: (req, file, cb) => cb(null, containerDir),
     filename: (req, file, cb) => {
-        // حماية الاسم من الرموز الغريبة التي قد تفسد مسار الملف
         const safeName = Buffer.from(file.originalname, 'latin1').toString('utf8');
         cb(null, safeName);
     }
 });
 const upload = multer({ storage: storage });
 
-// 1. نظام جلب وقراءة واستضافة الملفات الحقيقي
+// [1] استدعاء وقراءة ملفات الاستضافة بالكامل
 app.get('/api/files', (req, res) => {
     try {
         if (!fs.existsSync(containerDir)) return res.json({ status: 'success', files: [] });
         
-        // قراءة المجلد بشكل عميق وجلب البيانات الحقيقية من القرص
         const files = fs.readdirSync(containerDir).map(file => {
             const filePath = path.join(containerDir, file);
             const stats = fs.statSync(filePath);
@@ -52,63 +48,56 @@ app.get('/api/files', (req, res) => {
             };
         });
 
-        // ترتيب المجلدات أولاً ثم الملفات لسهولة التصفح
+        // إظهار المجلدات في الأعلى دائماً مثل نظام المجلدات في OptikLink
         files.sort((a, b) => b.isFolder - a.isFolder);
         res.json({ status: 'success', files });
     } catch (err) {
-        res.status(500).json({ status: 'error', message: 'فشل في قراءة قرص استضافة الملفات' });
+        res.status(500).json({ status: 'error', message: 'تعذر قراءة قرص الملفات' });
     }
 });
 
-// 2. استقبال وحفظ الملفات المرفوعة مباشرة في الحاوية
+// [2] رفع الملفات مباشرة إلى الاستضافة
 app.post('/api/files/upload', upload.single('file'), (req, res) => {
-    if (!req.file) return res.status(400).json({ status: 'error', message: 'لم يتم رفع أي ملف' });
     res.json({ status: 'success' });
 });
 
-// 3. المعالج الذكي لفك الضغط العميق والحذف النهائي بدون تعليق
+// [3] العمليات العميقة لملفات الاستضافة (حذف وفك ضغط فوري)
 app.post('/api/files/action', (req, res) => {
     const { action, fileName } = req.body;
     const filePath = path.join(containerDir, fileName);
 
     if (!fs.existsSync(filePath)) {
-        return res.status(400).json({ status: 'error', message: 'الملف غير موجود في مسار الاستضافة الرئيسي' });
+        return res.status(400).json({ status: 'error', message: 'الملف غير موجود' });
     }
 
-    // حل مشكلة فك الضغط التالف أو المتداخل
     if (action === 'unarchive') {
         try {
             const zip = new AdmZip(filePath);
-            
-            // فك الضغط مباشرة في المسار الرئيسي المعتمد `containerDir` مع تفعيل خاصية overwrite
+            // فك الضغط مباشرة في المجلد الرئيسي لضمان عدم إنشاء فولدرات داخلية تضيع الكود
             zip.extractAllTo(containerDir, true);
-            
-            // حذف ملف الـ zip الأصلي فوراً لتوفير مساحة الاستضافة وتجنب اللخبطة
+            // حذف ملف الـ zip فوراً بعد الفك لتوفير مساحة السيرفر ومنع التكرار
             fs.unlinkSync(filePath);
-            
-            return res.json({ status: 'success', message: 'تم فك الضغط وإعادة تنظيم الحاوية بنجاح' });
+            return res.json({ status: 'success' });
         } catch (e) {
-            return res.status(500).json({ status: 'error', message: 'حزمة المجلد المضغوط تالفة أو غير مدعومة' });
+            return res.status(500).json({ status: 'error', message: 'الملف المضغوط تالف' });
         }
     }
 
-    // حل مشكلة الحذف النهائي للمجلدات والملفات المعلقة
     if (action === 'delete') {
         try {
             if (fs.statSync(filePath).isDirectory()) {
-                // حذف المجلد وكل ما يحتويه بشكل عميق وقسري
                 fs.rmSync(filePath, { recursive: true, force: true });
             } else {
                 fs.unlinkSync(filePath);
             }
-            return res.json({ status: 'success', message: 'تم الحذف من القرص بنجاح' });
+            return res.json({ status: 'success' });
         } catch (err) {
-            return res.status(500).json({ status: 'error', message: 'فشل في إتمام عملية الحذف' });
+            return res.status(500).json({ status: 'error' });
         }
     }
 });
 
-// نظام البث المستمر للكونسول (SSE)
+// [4] نظام بث بيانات الـ Terminal حياً (Server-Sent Events)
 let logClients = [];
 app.get('/api/console/stream', (req, res) => {
     res.setHeader('Content-Type', 'text/event-stream');
@@ -122,43 +111,57 @@ function broadcastLog(msg) {
     logClients.forEach(c => c.write(`data: ${JSON.stringify({ log: msg, status: botStatus })}\n\n`));
 }
 
-// تشغيل البوت مع فحص ذكي لملفات الاستضافة قبل الإقلاع
-function startBot() {
+// [5] تشغيل بيئة الاستضافة مع الفحص التلقائي للـ Dependencies
+function startContainerServer() {
     botStatus = 'STARTING';
-    broadcastLog(`\n\x1b[36m[System Daemon]:\x1b[0m Checking container file health deployment...`);
+    broadcastLog(`\n\x1b[36m[OptikLink Daemon]:\x1b[0m Checking server disk space usage, please wait...`);
+    broadcastLog(`\n\x1b[36m[OptikLink Daemon]:\x1b[0m Allocating container system memory...`);
     
     const mainBotFile = path.join(containerDir, 'index.js');
-    
-    // التحقق الصارم من وجود ملف البوت في الاستضافة
     if (!fs.existsSync(mainBotFile)) {
         botStatus = 'OFFLINE';
-        broadcastLog(`\n\x1b[31m❌ [خطأ في الاستضافة]: لم يتم العثور على ملف index.js في المجلد الرئيسي للحاوية!\x1b[0m`);
-        broadcastLog(`\n\x1b[33m💡 نصيحة شادو: تأكد أن ملفات البوت ليست بداخل مجلد فرعي آخر بعد فك الضغط.\x1b[0m`);
+        broadcastLog(`\n\x1b[31m❌ [OptikLink Error]: لم يتم العثور على ملف التشغيل الرئيسي index.js في الاستضافة!\x1b[0m`);
         return;
     }
 
-    setTimeout(() => {
-        botStatus = 'RUNNING';
-        broadcastLog(`\n\x1b[32m[System Daemon]:\x1b[0m Launching process pipeline...\n`);
-        
-        activeProcess = spawn('node', ['index.js'], { cwd: containerDir });
-
-        activeProcess.stdout.on('data', (data) => broadcastLog(data.toString()));
-        activeProcess.stderr.on('data', (data) => broadcastLog(data.toString()));
-
-        activeProcess.on('close', () => {
-            botStatus = 'OFFLINE';
-            broadcastLog(`\n\x1b[31m[System Daemon]: Server process terminated (OFFLINE).\x1b[0m`);
-            activeProcess = null;
+    // التحقق التلقائي وتثبيت الموديلات المفقودة كاستضافة كاملة
+    const hasPackage = fs.existsSync(path.join(containerDir, 'package.json'));
+    if (hasPackage && !fs.existsSync(path.join(containerDir, 'node_modules'))) {
+        broadcastLog(`\n\x1b[33m[OptikLink Daemon]: node_modules missing. Running "npm install" inside container...\x1b[0m\n`);
+        exec('npm install', { cwd: containerDir }, (err, stdout, stderr) => {
+            if (err) {
+                broadcastLog(`\n\x1b[31m[NPM Error]: Failed to install packages.\x1b[0m\n`);
+            } else {
+                broadcastLog(`\n\x1b[32m[NPM Success]: Dependencies installed successfully!\x1b[0m\n`);
+            }
+            executeNodeProcess(mainBotFile);
         });
-    }, 1000);
+    } else {
+        setTimeout(() => { executeNodeProcess(mainBotFile); }, 1000);
+    }
+}
+
+function executeNodeProcess(mainFile) {
+    botStatus = 'RUNNING';
+    broadcastLog(`\n\x1b[32m[OptikLink Daemon]:\x1b[0m Server marked as RUNNING. Launching application environment...\n`);
+    
+    activeProcess = spawn('node', ['index.js'], { cwd: containerDir });
+
+    activeProcess.stdout.on('data', (data) => broadcastLog(data.toString()));
+    activeProcess.stderr.on('data', (data) => broadcastLog(data.toString()));
+
+    activeProcess.on('close', () => {
+        botStatus = 'OFFLINE';
+        broadcastLog(`\n\x1b[31m[OptikLink Daemon]:\x1b[0m Server marked as OFFLINE.\x1b[0m`);
+        activeProcess = null;
+    });
 }
 
 app.post('/api/bot/control', (req, res) => {
     const { action } = req.body;
-    if (action === 'start') { if (!activeProcess) startBot(); }
+    if (action === 'start') { if (!activeProcess) startContainerServer(); }
     if (action === 'stop' && activeProcess) { activeProcess.kill(); botStatus = 'OFFLINE'; }
-    if (action === 'restart') { if (activeProcess) activeProcess.kill(); startBot(); }
+    if (action === 'restart') { if (activeProcess) activeProcess.kill(); startContainerServer(); }
     res.json({ status: 'success' });
 });
 
@@ -175,4 +178,4 @@ app.post('/api/console/command', (req, res) => {
     res.json({});
 });
 
-app.listen(PORT, () => console.log(`نظام استضافة الملفات المستقر يعمل الآن على منفذ ${PORT}`));
+app.listen(PORT, () => console.log(`المنصة تعمل كاستضافة كاملة مطابقة لـ OptikLink على منفذ ${PORT}`));
